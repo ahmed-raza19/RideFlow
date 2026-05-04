@@ -81,7 +81,6 @@ FROM (
 ) ranked
 WHERE rnk <= 10;
 
-
 -- ─────────────────────────────────────────────────────────────
 -- REPORT 7: Currently active rides
 -- ─────────────────────────────────────────────────────────────
@@ -145,7 +144,7 @@ SELECT 'REPORT 11 — Drivers with AVG Rating < 3.5 (HAVING clause)' AS '';
 SELECT
     d.DriverID,
     CONCAT(u.FirstName, ' ', u.LastName)  AS DriverName,
-    COUNT(r.RatingID)                      AS TotalRatings,
+    COUNT(r.Score)                         AS TotalRatings,
     ROUND(AVG(r.Score), 2)                AS AvgRating
 FROM   DRIVERS  d
 JOIN   USERS    u ON d.UserID      = u.UserID

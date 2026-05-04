@@ -139,7 +139,7 @@ SELECT
     d.CommissionRate,
     COALESCE(l.City, 'Unknown')           AS City,
     ROUND(AVG(r.Score), 2)               AS AvgRating,
-    COUNT(r.RatingID)                     AS TotalRatings,
+    COUNT(r.Score)                        AS TotalRatings,
     COUNT(DISTINCT ri.RideID)             AS TotalRides
 FROM   DRIVERS   d
 JOIN   USERS     u   ON d.UserID      = u.UserID

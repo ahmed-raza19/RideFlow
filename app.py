@@ -204,7 +204,7 @@ def api_complaint_action(cid, action):
 @role_required('Admin')
 def api_vehicles():
     rows = qry("""SELECT v.VehicleID, v.Make, v.Model, v.VehicleType, v.LicensePlate,
-                        v.YearOfManufacture, v.VerificationStatus,
+                        v.Year AS YearOfManufacture, v.VerificationStatus,
                         CONCAT(u.FirstName,' ',u.LastName) DriverName
                  FROM VEHICLES v
                  JOIN DRIVERS d ON v.DriverID=d.DriverID
