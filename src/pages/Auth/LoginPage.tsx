@@ -8,8 +8,6 @@ import { useAppStore } from '@/store/useAppStore';
 import { FormInput } from '@/components/ui/FormInput';
 import { Button } from '@/components/ui/Button';
 import { fadeSlideUp, scaleIn } from '@/lib/motion';
-import { useState } from 'react';
-import { loginRequest } from '@/lib/authApi';
 
 const perks = [
   { icon: <Zap size={16} />,        text: 'Avg. pickup in 3.2 minutes' },
@@ -20,7 +18,6 @@ const perks = [
 export default function LoginPage() {
   const { login } = useAppStore();
   const navigate = useNavigate();
-  const [submitError, setSubmitError] = useState('');
 
   const {
     register,
@@ -29,14 +26,16 @@ export default function LoginPage() {
   } = useForm<SignInFormValues>({ resolver: zodResolver(signInSchema) });
 
   const onSubmit = async (data: SignInFormValues) => {
-    setSubmitError('');
-    try {
-      const { user, redirect } = await loginRequest(data.emailOrPhone, data.password);
-      login(user.email, user.name, user.role);
-      navigate(redirect);
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Login failed. Please try again.');
-    }
+    await new Promise((r) => setTimeout(r, 700));
+    const raw = data.emailOrPhone.split('@')[0] || 'rider';
+    const name = raw.charAt(0).toUpperCase() + raw.slice(1);
+    login(data.emailOrPhone, name);
+
+    // Route to correct dashboard
+    const email = data.emailOrPhone.toLowerCase();
+    if (email.startsWith('admin@'))       navigate('/admin');
+    else if (email.startsWith('driver@')) navigate('/driver');
+    else                                   navigate('/rider');
   };
 
   return (
@@ -101,8 +100,6 @@ export default function LoginPage() {
               {isSubmitting ? 'Signing in…' : 'Sign In'}
               {!isSubmitting && <ArrowRight size={18} />}
             </Button>
-
-            {submitError && <p className="form-error-msg mb-4">{submitError}</p>}
           </form>
 
           {/* Divider */}
@@ -132,6 +129,18 @@ export default function LoginPage() {
           </p>
         </motion.div>
 
+        {/* Demo hint */}
+        <motion.p
+          {...fadeSlideUp}
+          transition={{ delay: 0.4 }}
+          className="mt-6 text-xs text-warm-faint text-center max-w-[380px]"
+        >
+          Demo roles — use email prefix{' '}
+          <span className="text-amber-600 font-mono">rider@</span> /{' '}
+          <span className="text-amber-600 font-mono">driver@</span> /{' '}
+          <span className="text-amber-600 font-mono">admin@</span>{' '}
+          + any password (6+ chars)
+        </motion.p>
       </div>
 
       {/* ── Right panel — branding visual ──────────────── */}

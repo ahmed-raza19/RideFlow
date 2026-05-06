@@ -15,7 +15,7 @@ interface AppState {
   activeVehicle: 'economy' | 'premium' | 'suv';
   driverOnline: boolean;
 
-  login: (email: string, name: string, role?: Role | null) => void;
+  login: (email: string, name: string) => void;
   logout: () => void;
   openSignIn: () => void;
   openSignUp: () => void;
@@ -39,9 +39,9 @@ export const useAppStore = create<AppState>((set) => ({
   activeVehicle: 'premium',
   driverOnline: false,
 
-  login: (email, name, role) =>
+  login: (email, name) =>
     set({
-      user: { email, name, role: role ?? inferRole(email) },
+      user: { email, name, role: inferRole(email) },
       isSignInOpen: false,
       isSignUpOpen: false,
     }),

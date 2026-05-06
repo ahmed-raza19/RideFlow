@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/Button';
 import { PasswordStrength } from '@/components/shared/PasswordStrength';
 import { fadeSlideUp, scaleIn } from '@/lib/motion';
 import { clsx } from 'clsx';
-import { signUpRequest } from '@/lib/authApi';
 
 const countryCodes = ['+1', '+44', '+92', '+61', '+49', '+33', '+91', '+971'];
 
@@ -35,36 +34,22 @@ export default function SignUpPage() {
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<'rider' | 'driver'>('rider');
-  const [submitError, setSubmitError] = useState('');
 
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<SignUpFormValues>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { countryCode: '+1', role: 'rider', terms: false },
+    defaultValues: { countryCode: '+1', terms: false },
   });
 
   const onSubmit = async (data: SignUpFormValues) => {
-    setSubmitError('');
-    try {
-      const { user, redirect } = await signUpRequest({
-        fullName: data.fullName,
-        email: data.email,
-        countryCode: data.countryCode,
-        phone: data.phone,
-        password: data.password,
-        role,
-        licenseNumber: data.licenseNumber,
-        cnic: data.cnic,
-      });
-      login(user.email, user.name, user.role);
-      navigate(redirect);
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Signup failed. Please try again.');
-    }
+    await new Promise((r) => setTimeout(r, 700));
+    // Build email with role prefix so the store infers the correct role
+    const prefixedEmail = `${role}@rideflow-demo.app`;
+    login(prefixedEmail, data.fullName);
+    navigate(role === 'driver' ? '/driver' : '/rider');
   };
 
   return (
@@ -167,11 +152,7 @@ export default function SignUpPage() {
               <button
                 key={key}
                 type="button"
-                onClick={() => {
-                  const nextRole = key as 'rider' | 'driver';
-                  setRole(nextRole);
-                  setValue('role', nextRole, { shouldValidate: true });
-                }}
+                onClick={() => setRole(key as 'rider' | 'driver')}
                 className={clsx(
                   'p-4 rounded-2xl border-2 text-left transition-all duration-200 flex flex-col gap-2',
                   role === key
@@ -189,8 +170,6 @@ export default function SignUpPage() {
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} noValidate>
-            <input type="hidden" {...register('role')} />
-
             <FormInput
               label="Full Name"
               type="text"
@@ -256,23 +235,6 @@ export default function SignUpPage() {
               <PasswordStrength password={password} />
             </div>
 
-            {role === 'driver' && (
-              <>
-                <FormInput
-                  label="License Number"
-                  type="text"
-                  error={errors.licenseNumber?.message}
-                  {...register('licenseNumber')}
-                />
-                <FormInput
-                  label="CNIC (12345-1234567-1)"
-                  type="text"
-                  error={errors.cnic?.message}
-                  {...register('cnic')}
-                />
-              </>
-            )}
-
             {/* Terms */}
             <div className="flex items-start gap-3 mt-5 mb-6">
               <input
@@ -291,8 +253,6 @@ export default function SignUpPage() {
             {errors.terms && (
               <p className="form-error-msg mb-4">{errors.terms.message}</p>
             )}
-
-            {submitError && <p className="form-error-msg mb-4">{submitError}</p>}
 
             <Button
               variant="primary"

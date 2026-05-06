@@ -4,22 +4,6 @@ import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  server: {
-    proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:5000',
-        changeOrigin: true,
-      },
-      '/login': {
-        target: 'http://127.0.0.1:5000',
-        changeOrigin: true,
-      },
-      '/logout': {
-        target: 'http://127.0.0.1:5000',
-        changeOrigin: true,
-      },
-    },
-  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),

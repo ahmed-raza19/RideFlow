@@ -2,18 +2,15 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import { Chrome } from 'lucide-react';
-import { useState } from 'react';
 import { signInSchema, type SignInFormValues } from '@/lib/validators';
 import { useAppStore } from '@/store/useAppStore';
 import { Modal } from '@/components/ui/Modal';
 import { FormInput } from '@/components/ui/FormInput';
 import { Button } from '@/components/ui/Button';
 import { fadeSlideUp } from '@/lib/motion';
-import { loginRequest } from '@/lib/authApi';
 
 export function SignInModal() {
   const { isSignInOpen, closeModals, openSignUp, login } = useAppStore();
-  const [submitError, setSubmitError] = useState('');
 
   const {
     register,
@@ -24,13 +21,10 @@ export function SignInModal() {
   });
 
   const onSubmit = async (data: SignInFormValues) => {
-    setSubmitError('');
-    try {
-      const { user } = await loginRequest(data.emailOrPhone, data.password);
-      login(user.email, user.name, user.role);
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Login failed. Please try again.');
-    }
+    // Mock auth — simulate a brief network delay
+    await new Promise((r) => setTimeout(r, 600));
+    const name = data.emailOrPhone.split('@')[0] || 'Rider';
+    login(data.emailOrPhone, name.charAt(0).toUpperCase() + name.slice(1));
   };
 
   return (
@@ -69,8 +63,6 @@ export function SignInModal() {
           >
             {isSubmitting ? 'Signing in…' : 'Sign In'}
           </Button>
-
-          {submitError && <p className="form-error-msg mb-4">{submitError}</p>}
         </form>
 
         {/* Divider */}
@@ -106,6 +98,10 @@ export function SignInModal() {
           </button>
         </p>
 
+        {/* Demo hint */}
+        <p className="text-center text-xs text-warm-faint mt-4 p-3 rounded-lg" style={{ background: 'rgba(217,119,6,0.06)' }}>
+          Demo: use <strong className="text-amber-600">rider@</strong>, <strong className="text-amber-600">driver@</strong>, or <strong className="text-amber-600">admin@</strong> email prefix
+        </p>
       </motion.div>
     </Modal>
   );
