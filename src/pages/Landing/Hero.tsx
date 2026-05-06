@@ -8,7 +8,7 @@ import { fadeSlideUp } from '@/lib/motion';
 export function Hero() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const sceneRef = useRef<{ destroy: () => void } | null>(null);
-  const { openSignUp } = useAppStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     let mounted = true;
@@ -97,7 +97,7 @@ export function Hero() {
               <Button
                 variant="primary"
                 size="lg"
-                onClick={openSignUp}
+                onClick={() => navigate('/signup')}
                 className="flex items-center gap-2"
               >
                 Request a Ride

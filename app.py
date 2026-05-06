@@ -4,6 +4,8 @@ from functools import wraps
 from config import DB_CONFIG, SECRET_KEY
 from datetime import datetime
 from decimal import Decimal
+import re
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -79,6 +81,76 @@ def clean1(row):
     if not row: return None
     return {k: _serial(v) for k, v in row.items()}
 
+
+def _parse_name(full_name):
+    parts = [p for p in (full_name or '').strip().split() if p]
+    if len(parts) < 2:
+        return None, None
+    return parts[0], ' '.join(parts[1:])
+
+
+def _normalize_phone(value):
+    raw = (value or '').strip()
+    if not raw:
+        return ''
+    plus = '+' if raw.startswith('+') else ''
+    digits = ''.join(ch for ch in raw if ch.isdigit())
+    return f"{plus}{digits}"
+
+
+def _is_valid_email(value):
+    return bool(re.fullmatch(r'[^\s@]+@[^\s@]+\.[^\s@]+', (value or '').strip()))
+
+
+def _build_auth_payload(user):
+    return {
+        'id': user['UserID'],
+        'name': f"{user['FirstName']} {user['LastName']}",
+        'email': user['Email'],
+        'role': user['Role'].lower(),
+    }
+
+
+def _find_active_user_by_identity(identity):
+    identity = (identity or '').strip()
+    if not identity:
+        return None
+
+    if _is_valid_email(identity):
+        return qry("SELECT * FROM USERS WHERE Email=%s AND AccountStatus='Active'", (identity,), one=True)
+
+    norm = _normalize_phone(identity)
+    if not norm:
+        return None
+    rows = qry("""
+        SELECT u.*, p.PhoneNumber
+        FROM USERS u
+        JOIN USER_PHONES p ON p.UserID=u.UserID
+        WHERE u.AccountStatus='Active'
+    """) or []
+    for row in rows:
+        if _normalize_phone(row.get('PhoneNumber')) == norm:
+            user = dict(row)
+            user.pop('PhoneNumber', None)
+            return user
+    return None
+
+
+def _verify_password(user, password):
+    stored = user.get('Password') or ''
+    if stored.startswith('pbkdf2:') or stored.startswith('scrypt:'):
+        return check_password_hash(stored, password)
+    # Compatibility path for legacy seeded data in this educational project.
+    return password.lower() == (user.get('FirstName') or '').lower()
+
+
+def _set_auth_session(user):
+    session.permanent = True
+    session['user_id'] = user['UserID']
+    session['user_name'] = f"{user['FirstName']} {user['LastName']}"
+    session['role'] = user['Role']
+    session['email'] = user['Email']
+
 # ── Auth ───────────────────────────────────────────────────────
 def role_required(*roles):
     def deco(f):
@@ -118,21 +190,117 @@ def driver_page():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json() or {}
-    email    = (data.get('email') or '').strip()
+    email    = (data.get('email') or data.get('emailOrPhone') or '').strip()
     password = (data.get('password') or '').strip()
     if not email or not password:
-        return jsonify({'error': 'Email and password are required'}), 400
-    user = qry("SELECT * FROM USERS WHERE Email=%s AND AccountStatus='Active'", (email,), one=True)
+        return jsonify({'error': 'Email/phone and password are required'}), 400
+    user = _find_active_user_by_identity(email)
     if not user:
         return jsonify({'error': 'Account not found or suspended'}), 401
-    if password.lower() != user['FirstName'].lower():
+    if not _verify_password(user, password):
         return jsonify({'error': 'Invalid password'}), 401
-    session.permanent = True
-    session['user_id']   = user['UserID']
-    session['user_name'] = f"{user['FirstName']} {user['LastName']}"
-    session['role']      = user['Role']
-    session['email']     = user['Email']
-    return jsonify({'redirect': {'Admin':'/admin','Rider':'/rider','Driver':'/driver'}.get(user['Role'],'/')})
+    _set_auth_session(user)
+    return jsonify({
+        'redirect': {'Admin': '/admin', 'Rider': '/rider', 'Driver': '/driver'}.get(user['Role'], '/'),
+        'user': _build_auth_payload(user),
+    })
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_auth_login():
+    return login()
+
+
+@app.route('/api/auth/signup', methods=['POST'])
+def api_auth_signup():
+    data = request.get_json() or {}
+    full_name = (data.get('full_name') or data.get('fullName') or '').strip()
+    email = (data.get('email') or '').strip().lower()
+    password = (data.get('password') or '').strip()
+    country_code = (data.get('country_code') or data.get('countryCode') or '').strip()
+    phone = (data.get('phone') or '').strip()
+    role = (data.get('role') or 'Rider').strip().title()
+    license_number = (data.get('license_number') or data.get('licenseNumber') or '').strip()
+    cnic = (data.get('cnic') or '').strip()
+
+    first_name, last_name = _parse_name(full_name)
+    if not first_name or not last_name:
+        return jsonify({'error': 'Please provide full name (first and last name).'}), 400
+    if not _is_valid_email(email):
+        return jsonify({'error': 'Please provide a valid email address.'}), 400
+    if len(password) < 8:
+        return jsonify({'error': 'Password must be at least 8 characters.'}), 400
+    if role not in ('Rider', 'Driver'):
+        return jsonify({'error': 'Role must be Rider or Driver.'}), 400
+
+    normalized_phone = _normalize_phone(f"{country_code}{phone}")
+    if len(normalized_phone.replace('+', '')) < 7:
+        return jsonify({'error': 'Please provide a valid phone number.'}), 400
+
+    if role == 'Driver' and (not license_number or not cnic):
+        return jsonify({'error': 'License number and CNIC are required for drivers.'}), 400
+
+    conn = get_db()
+    if not conn:
+        return jsonify({'error': 'Database unavailable'}), 503
+
+    try:
+        cur = conn.cursor(dictionary=True)
+        cur.execute(
+            """
+            INSERT INTO USERS (FirstName, LastName, Email, Password, Role, AccountStatus)
+            VALUES (%s, %s, %s, %s, %s, 'Active')
+            """,
+            (first_name, last_name, email, generate_password_hash(password), role),
+        )
+        user_id = cur.lastrowid
+
+        cur.execute(
+            "INSERT INTO USER_PHONES (UserID, PhoneNumber) VALUES (%s, %s)",
+            (user_id, normalized_phone),
+        )
+
+        if role == 'Driver':
+            cur.execute(
+                """
+                INSERT INTO DRIVERS (
+                    UserID, LicenseNumber, CNIC, VerificationStatus,
+                    AvailabilityStatus, WalletBalance, CommissionRate, CurrentLocationID
+                ) VALUES (%s, %s, %s, 'Unverified', 'Offline', 0.00, 10.00, NULL)
+                """,
+                (user_id, license_number, cnic),
+            )
+
+        conn.commit()
+
+        cur.execute("SELECT * FROM USERS WHERE UserID=%s", (user_id,))
+        user = cur.fetchone()
+        _set_auth_session(user)
+        return jsonify({
+            'success': True,
+            'user': _build_auth_payload(user),
+            'redirect': {'Admin': '/admin', 'Rider': '/rider', 'Driver': '/driver'}.get(user['Role'], '/'),
+        }), 201
+    except mysql.connector.Error as e:
+        try:
+            conn.rollback()
+        except:
+            pass
+        if getattr(e, 'errno', None) == 1062:
+            msg = str(e)
+            if 'Email' in msg:
+                return jsonify({'error': 'An account with this email already exists.'}), 409
+            if 'LicenseNumber' in msg:
+                return jsonify({'error': 'This license number is already registered.'}), 409
+            if 'CNIC' in msg:
+                return jsonify({'error': 'This CNIC is already registered.'}), 409
+            return jsonify({'error': 'Duplicate value found. Please check your input.'}), 409
+        return jsonify({'error': str(e)}), 500
+    finally:
+        try:
+            conn.close()
+        except:
+            pass
 
 @app.route('/logout')
 def logout():

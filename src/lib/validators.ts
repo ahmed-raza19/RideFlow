@@ -20,6 +20,7 @@ export type SignInFormValues = z.infer<typeof signInSchema>;
 
 // ── Sign Up Schema ──
 export const signUpSchema = z.object({
+  role: z.enum(['rider', 'driver']),
   fullName: z
     .string()
     .min(2, 'Full name must be at least 2 characters')
@@ -38,10 +39,30 @@ export const signUpSchema = z.object({
     .string()
     .min(8, 'Password must be at least 8 characters')
     .regex(/[A-Z]/, 'Include at least one uppercase letter')
-    .regex(/[0-9]/, 'Include at least one number'),
+    .regex(/[0-9]/, 'Include at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Include at least one special character'),
+  licenseNumber: z.string().optional(),
+  cnic: z.string().optional(),
   terms: z
     .boolean()
     .refine((v) => v === true, { message: 'You must accept the terms' }),
+}).superRefine((data, ctx) => {
+  if (data.role === 'driver') {
+    if (!data.licenseNumber || data.licenseNumber.trim().length < 5) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['licenseNumber'],
+        message: 'License number is required for drivers',
+      });
+    }
+    if (!data.cnic || !/^\d{5}-\d{7}-\d$/.test(data.cnic.trim())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['cnic'],
+        message: 'CNIC must be in format 12345-1234567-1',
+      });
+    }
+  }
 });
 
 export type SignUpFormValues = z.infer<typeof signUpSchema>;
