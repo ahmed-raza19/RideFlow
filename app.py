@@ -211,6 +211,21 @@ def api_auth_login():
     return login()
 
 
+@app.route('/api/auth/me', methods=['GET'])
+def api_auth_me():
+    """Return the currently logged-in user (for session restore on page reload)."""
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+    return jsonify({
+        'user': {
+            'id':    session['user_id'],
+            'name':  session['user_name'],
+            'email': session['email'],
+            'role':  session['role'].lower(),
+        }
+    })
+
+
 @app.route('/api/auth/signup', methods=['POST'])
 def api_auth_signup():
     data = request.get_json() or {}
