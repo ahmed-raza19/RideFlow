@@ -1,14 +1,14 @@
 import { motion } from 'framer-motion';
 
 export function AnimatedParticles() {
-  const particles = [...Array(25)].map((_, i) => ({
+  const particles = [...Array(12)].map((_, i) => ({
     id: i,
-    size: Math.random() * 3 + 1,
-    duration: Math.random() * 20 + 10,
-    delay: Math.random() * 5,
-    pathX: Math.random() * 100 - 50,
-    pathY: Math.random() * 100 - 50,
-    opacity: Math.random() * 0.4 + 0.1, // Reduced for softer texture
+    size: Math.random() * 2 + 1,
+    duration: Math.random() * 15 + 10,
+    delay: Math.random() * 3,
+    pathX: Math.random() * 60 - 30,
+    pathY: Math.random() * 60 - 30,
+    opacity: Math.random() * 0.3 + 0.1,
   }));
 
   return (
@@ -43,51 +43,47 @@ export function AnimatedParticles() {
         />
       ))}
       
-      {/* Floating dust motes */}
-      {[...Array(15)].map((_, i) => (
+      {/* Reduced floating dust motes */}
+      {[...Array(8)].map((_, i) => (
         <motion.div
           key={`dust-${i}`}
-          className="absolute w-0.5 h-0.5 rounded-full bg-soft-gold/20"
+          className="absolute w-0.5 h-0.5 rounded-full bg-soft-gold/15"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            filter: 'blur(0.3px)',
+            filter: 'blur(0.5px)',
           }}
           animate={{
-            x: [0, Math.random() * 30 - 15],
-            y: [0, -Math.random() * 40 - 15],
-            opacity: [0, 0.2, 0],
+            opacity: [0, 0.15, 0],
           }}
           transition={{
-            duration: 8 + Math.random() * 4,
+            duration: 6 + Math.random() * 3,
             repeat: Infinity,
-            delay: Math.random() * 3,
+            delay: Math.random() * 2,
             ease: 'easeInOut',
           }}
         />
       ))}
       
-      {/* Slow-moving light orbs */}
-      {[...Array(6)].map((_, i) => (
+      {/* Reduced light orbs */}
+      {[...Array(3)].map((_, i) => (
         <motion.div
           key={`orb-${i}`}
           className="absolute w-2 h-2 rounded-full"
           style={{
-            background: `radial-gradient(circle, rgba(245, 158, 11, 0.6) 0%, rgba(251, 191, 36, 0.3) 50%, transparent 70%)`,
+            background: `radial-gradient(circle, rgba(245, 158, 11, 0.5) 0%, rgba(251, 191, 36, 0.2) 50%, transparent 70%)`,
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            filter: 'blur(0.8px)',
+            filter: 'blur(1px)',
           }}
           animate={{
-            x: [0, 80 - Math.random() * 160],
-            y: [0, -40 - Math.random() * 80],
-            scale: [1, 1.3, 1],
-            opacity: [0.15, 0.4, 0.15],
+            scale: [1, 1.2, 1],
+            opacity: [0.1, 0.3, 0.1],
           }}
           transition={{
-            duration: 15 + Math.random() * 10,
+            duration: 8 + Math.random() * 4,
             repeat: Infinity,
-            delay: Math.random() * 5,
+            delay: Math.random() * 3,
             ease: 'easeInOut',
           }}
         />

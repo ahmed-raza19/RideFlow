@@ -14,7 +14,7 @@ import { DynamicSpotlight } from '../components/ui/DynamicSpotlight';
 import { AnimatedParticles } from '../components/ui/AnimatedParticles';
 import { ConnectiveGlow } from '../components/ui/ConnectiveGlow';
 import { AuthModal } from '../components/auth/AuthModal';
-import { motion, useMotionValue, useSpring } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export function Landing() {
   const [authModal, setAuthModal] = useState<{ isOpen: boolean; mode: 'signin' | 'signup' }>({
@@ -23,25 +23,8 @@ export function Landing() {
   });
     const heroRef = useRef<HTMLDivElement>(null);
   const howItWorksRef = useRef<HTMLDivElement>(null);
-  const cursorRef = useRef<HTMLDivElement>(null);
 
-  // Mouse tracking for cursor effects
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const springX = useSpring(mouseX, { stiffness: 150, damping: 15 });
-  const springY = useSpring(mouseY, { stiffness: 150, damping: 15 });
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      const { clientX, clientY } = e;
-      mouseX.set(clientX);
-      mouseY.set(clientY);
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [mouseX, mouseY]);
-
+  
   useEffect(() => {
     // Dynamic import for Three.js scene
     const canvas = document.querySelector<HTMLCanvasElement>('#hero-canvas');
@@ -90,26 +73,15 @@ export function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-warm-white via-soft-beige to-ivory text-text-primary overflow-x-hidden relative">
-      {/* Custom Cursor */}
-      <motion.div
-        ref={cursorRef}
-        className="fixed w-6 h-6 rounded-full bg-gradient-to-r from-soft-gold to-champagne opacity-50 pointer-events-none z-50 mix-blend-screen"
-        style={{
-          x: springX,
-          y: springY,
-          translateX: '-50%',
-          translateY: '-50%',
-        }}
-      />
-      
-      {/* Enhanced Visual Layers */}
+            
+      {/* Optimized Visual Layers */}
       <CinematicBackground />
       <GeographicTextures />
       <MotionTrails />
       <DynamicSpotlight />
-      <ConnectiveGlow />
-      <AnimatedParticles />
-      <Floating3DObjects />
+      {/* <ConnectiveGlow /> */}
+      {/* <AnimatedParticles /> */}
+      {/* <Floating3DObjects /> */}
       <Navbar 
         onLoginClick={() => setAuthModal({ isOpen: true, mode: 'signin' })} 
         onSignupClick={() => setAuthModal({ isOpen: true, mode: 'signup' })} 
@@ -210,53 +182,293 @@ export function Landing() {
               </div>
             </div>
 
-            {/* Right Content */}
-            <ParallaxWrapper speed={0.3} className="lg:col-span-7 relative hero-illustration h-[400px] lg:h-[600px] w-full">
-              <canvas id="hero-canvas" className="w-full h-full object-contain" />
-              
-              {/* Floating Cards */}
+            {/* Right Content - Isometric City */}
+            <div className="lg:col-span-7 relative hero-illustration h-[400px] lg:h-[600px] w-full overflow-hidden">
+              {/* Isometric City SVG */}
+              <svg viewBox="0 0 680 640" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" aria-hidden="true" className="w-full h-full">
+                <defs>
+                  <filter id="bldShadow">
+                    <feDropShadow dx="4" dy="6" stdDeviation="5" floodColor="#8B6820" floodOpacity="0.2"/>
+                  </filter>
+                  <filter id="routeGlow">
+                    <feGaussianBlur stdDeviation="3" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <filter id="carGlow">
+                    <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="#8B6820" floodOpacity="0.25"/>
+                  </filter>
+                </defs>
+
+                <g className="iso-scene">
+
+                {/* ── GROUND PLANE ── */}
+                <polygon points="340,60 660,230 340,400 20,230"
+                  fill="#EDE3CE" stroke="#D8CAA8" strokeWidth="0.8"/>
+
+                {/* Ground grid */}
+                <g stroke="#C8B880" strokeWidth="0.4" opacity="0.45">
+                  {/* horizontals */}
+                  <line x1="100" y1="190" x2="580" y2="190"/>
+                  <line x1="60"  y1="215" x2="620" y2="215"/>
+                  <line x1="20"  y1="240" x2="660" y2="240"/>
+                  <line x1="60"  y1="265" x2="620" y2="265"/>
+                  <line x1="100" y1="290" x2="580" y2="290"/>
+                  <line x1="140" y1="315" x2="540" y2="315"/>
+                  <line x1="180" y1="340" x2="500" y2="340"/>
+                  {/* left diagonals */}
+                  <line x1="340" y1="60"  x2="20"  y2="230"/>
+                  <line x1="400" y1="60"  x2="80"  y2="230"/>
+                  <line x1="460" y1="76"  x2="140" y2="246"/>
+                  <line x1="520" y1="108" x2="200" y2="278"/>
+                  <line x1="580" y1="140" x2="260" y2="310"/>
+                  <line x1="640" y1="172" x2="320" y2="342"/>
+                  {/* right diagonals */}
+                  <line x1="280" y1="60"  x2="600" y2="230"/>
+                  <line x1="220" y1="76"  x2="540" y2="246"/>
+                  <line x1="160" y1="108" x2="480" y2="278"/>
+                  <line x1="100" y1="140" x2="420" y2="310"/>
+                  <line x1="40"  y1="172" x2="360" y2="342"/>
+                </g>
+
+                {/* ── ROADS ── */}
+                {/* Main road strip (center) */}
+                <polygon points="220,175 380,95 420,116 260,196" fill="#D8C898" opacity="0.7" stroke="none"/>
+                <polygon points="260,196 420,116 460,138 300,218" fill="#D8C898" opacity="0.7" stroke="none"/>
+                <polygon points="300,218 460,138 500,160 340,240" fill="#D8C898" opacity="0.7" stroke="none"/>
+                <polygon points="340,240 500,160 530,178 370,258" fill="#D8C898" opacity="0.7" stroke="none"/>
+                {/* Road center dashes */}
+                <g stroke="#C4B070" strokeWidth="1" strokeDasharray="10,8" opacity="0.5">
+                  <line x1="250" y1="186" x2="430" y2="127"/>
+                  <line x1="330" y1="229" x2="510" y2="169"/>
+                </g>
+
+                {/* ── BUILDINGS ── */}
+
+                {/* Building 1: Tall back-left */}
+                <g filter="url(#bldShadow)">
+                  <polygon points="95,205 145,177 145,97 95,125" fill="#B89A60"/>
+                  <polygon points="95,125 145,97 195,125 145,153" fill="#F0D890"/>
+                  <polygon points="145,153 195,125 195,205 145,233" fill="#D4BC78"/>
+                  {/* windows L */}
+                  <rect x="103" y="133" width="10" height="13" rx="1.5"
+                        fill="rgba(245,235,210,0.5)" transform="matrix(1,0.5,0,1,0,0)"/>
+                  <rect x="118" y="125" width="10" height="13" rx="1.5"
+                        fill="rgba(200,160,60,0.55)" transform="matrix(1,0.5,0,1,0,0)"/>
+                  <rect x="103" y="152" width="10" height="13" rx="1.5"
+                        fill="rgba(245,235,210,0.4)" transform="matrix(1,0.5,0,1,0,0)"/>
+                  <rect x="118" y="144" width="10" height="13" rx="1.5"
+                        fill="rgba(245,235,210,0.5)" transform="matrix(1,0.5,0,1,0,0)"/>
+                  {/* windows R */}
+                  <rect x="152" y="133" width="10" height="13" rx="1.5"
+                        fill="rgba(245,235,210,0.4)" transform="matrix(1,-0.5,0,1,0,0)"/>
+                  <rect x="167" y="141" width="10" height="13" rx="1.5"
+                        fill="rgba(200,160,60,0.5)" transform="matrix(1,-0.5,0,1,0,0)"/>
+                  {/* rooftop accent */}
+                  <polygon points="95,125 145,97 195,125 145,153" fill="none" stroke="#E8C860" strokeWidth="0.6" opacity="0.4"/>
+                </g>
+
+                {/* Building 2: Medium mid-left */}
+                <g filter="url(#bldShadow)">
+                  <polygon points="145,265 185,243 185,183 145,205" fill="#A88C52"/>
+                  <polygon points="145,205 185,183 220,200 180,222" fill="#E0C87C"/>
+                  <polygon points="180,222 220,200 220,260 180,282" fill="#C4A868"/>
+                  <rect x="152" y="212" width="9" height="12" rx="1"
+                        fill="rgba(245,235,210,0.45)" transform="matrix(1,0.5,0,1,0,0)"/>
+                  <rect x="165" y="205" width="9" height="12" rx="1"
+                        fill="rgba(200,160,60,0.5)" transform="matrix(1,0.5,0,1,0,0)"/>
+                </g>
+
+                {/* Building 3: Tall far-right */}
+                <g filter="url(#bldShadow)">
+                  <polygon points="490,200 540,172 540,92 490,120" fill="#C0A268"/>
+                  <polygon points="490,120 540,92 590,120 540,148" fill="#F4DC92"/>
+                  <polygon points="540,148 590,120 590,200 540,228" fill="#DCC07A"/>
+                  {/* windows R */}
+                  <rect x="546" y="156" width="11" height="14" rx="1.5"
+                        fill="rgba(245,235,210,0.5)" transform="matrix(1,-0.5,0,1,0,0)"/>
+                  <rect x="562" y="165" width="11" height="14" rx="1.5"
+                        fill="rgba(200,160,60,0.55)" transform="matrix(1,-0.5,0,1,0,0)"/>
+                  <rect x="546" y="176" width="11" height="14" rx="1.5"
+                        fill="rgba(245,235,210,0.4)" transform="matrix(1,-0.5,0,1,0,0)"/>
+                  {/* windows L */}
+                  <rect x="498" y="128" width="11" height="14" rx="1.5"
+                        fill="rgba(245,235,210,0.45)" transform="matrix(1,0.5,0,1,0,0)"/>
+                  <rect x="513" y="120" width="11" height="14" rx="1.5"
+                        fill="rgba(200,160,60,0.5)" transform="matrix(1,0.5,0,1,0,0)"/>
+                </g>
+
+                {/* Building 4: Medium right */}
+                <g filter="url(#bldShadow)">
+                  <polygon points="435,255 472,234 472,174 435,195" fill="#B09058"/>
+                  <polygon points="435,195 472,174 508,194 471,215" fill="#E8CE80"/>
+                  <polygon points="471,215 508,194 508,254 471,275" fill="#CCAA68"/>
+                  <rect x="477" y="202" width="9" height="12" rx="1"
+                        fill="rgba(245,235,210,0.45)" transform="matrix(1,-0.5,0,1,0,0)"/>
+                  <rect x="491" y="210" width="9" height="12" rx="1"
+                        fill="rgba(200,160,60,0.5)" transform="matrix(1,-0.5,0,1,0,0)"/>
+                </g>
+
+                {/* Building 5: Small front-left */}
+                <g filter="url(#bldShadow)">
+                  <polygon points="185,318 218,300 218,264 185,282" fill="#9C8044"/>
+                  <polygon points="185,282 218,264 246,278 213,296" fill="#D8BE72"/>
+                  <polygon points="213,296 246,278 246,314 213,332" fill="#B89858"/>
+                </g>
+
+                {/* Building 6: Small front-right */}
+                <g filter="url(#bldShadow)">
+                  <polygon points="446,298 478,280 478,248 446,266" fill="#9C8044"/>
+                  <polygon points="446,266 478,248 506,262 474,280" fill="#DCC07A"/>
+                  <polygon points="474,280 506,262 506,294 474,312" fill="#BEA05E"/>
+                </g>
+
+                {/* Building 7: tiny accent left-back */}
+                <g>
+                  <polygon points="190,158 215,144 215,120 190,134" fill="#A08848" opacity="0.7"/>
+                  <polygon points="190,134 215,120 236,132 211,146" fill="#D4B86A" opacity="0.7"/>
+                  <polygon points="211,146 236,132 236,156 211,170" fill="#BC9E5A" opacity="0.7"/>
+                </g>
+
+                {/* Building 8: tiny accent right-back */}
+                <g>
+                  <polygon points="420,155 442,143 442,120 420,132" fill="#A08848" opacity="0.7"/>
+                  <polygon points="420,132 442,120 462,130 440,142" fill="#D4B86A" opacity="0.7"/>
+                  <polygon points="440,142 462,130 462,152 440,164" fill="#BC9E5A" opacity="0.7"/>
+                </g>
+
+                {/* ── GLOWING ROUTE ── */}
+                {/* Outer glow */}
+                <path className="route-line" d="M 190 302 C 230 278 270 260 310 248 C 350 236 390 232 430 240 C 455 246 468 258 472 268"
+                  fill="none" stroke="#E8A020" strokeWidth="6" strokeLinecap="round" opacity="0.25"
+                  filter="url(#routeGlow)"/>
+                {/* Main line */}
+                <path className="route-line" d="M 190 302 C 230 278 270 260 310 248 C 350 236 390 232 430 240 C 455 246 468 258 472 268"
+                  fill="none" stroke="#C8851A" strokeWidth="3.5" strokeLinecap="round" opacity="0.95"/>
+                {/* Inner highlight */}
+                <path className="route-glow" d="M 190 302 C 230 278 270 260 310 248 C 350 236 390 232 430 240 C 455 246 468 258 472 268"
+                  fill="none" stroke="#FFD880" strokeWidth="1.2" strokeLinecap="round" opacity="0.7"/>
+
+                {/* Route start dot */}
+                <circle cx="190" cy="302" r="6" fill="#C8851A"/>
+                <circle cx="190" cy="302" r="11" fill="none" stroke="#C8851A" strokeWidth="1.5" opacity="0.3"/>
+                <circle cx="190" cy="302" r="17" fill="none" stroke="#C8851A" strokeWidth="0.8" opacity="0.15"/>
+
+                {/* ── DESTINATION PIN ── */}
+                <g className="dest-pin">
+                  <circle cx="472" cy="262" r="16" fill="#C8851A" opacity="0.12"/>
+                  <circle cx="472" cy="262" r="10" fill="#C8851A" opacity="0.9"/>
+                  <circle cx="472" cy="262" r="5"  fill="#FFE080"/>
+                  <line x1="472" y1="272" x2="472" y2="286" stroke="#C8851A" strokeWidth="2" opacity="0.6" strokeLinecap="round"/>
+                  {/* pin shadow */}
+                  <ellipse cx="472" cy="290" rx="6" ry="2.5" fill="#8B6820" opacity="0.15"/>
+                </g>
+
+                {/* ── CAR ── */}
+                <g className="car-group" filter="url(#carGlow)" transform="translate(290,230)">
+                  {/* Ground shadow */}
+                  <ellipse cx="24" cy="30" rx="36" ry="9" fill="#8B6820" opacity="0.18"/>
+
+                  {/* Isometric car body */}
+                  {/* Bottom base */}
+                  <polygon points="-10,26 58,26 58,14 -10,14" fill="#181510" rx="2"/>
+                  {/* Side skirt detail */}
+                  <polygon points="-10,26 -10,14 -14,18 -14,24" fill="#0E0C0A"/>
+                  <polygon points="58,14 58,26 62,22 62,16" fill="#0E0C0A"/>
+
+                  {/* Main body */}
+                  <polygon points="-10,14 58,14 52,4 -4,4" fill="#1E1C16"/>
+                  {/* Roof */}
+                  <polygon points="-4,4 52,4 46,-6 2,-6" fill="#1A1810"/>
+
+                  {/* Windscreen front */}
+                  <polygon points="2,-6 46,-6 50,2 -2,2" fill="#3D4A5C" opacity="0.9"/>
+                  {/* Rear glass */}
+                  <polygon points="-4,4 -2,2 -10,6 -10,10" fill="#3D4A5C" opacity="0.75"/>
+                  {/* Side glass strip */}
+                  <polygon points="-2,2 50,2 52,4 -4,4" fill="#4A566A" opacity="0.5"/>
+
+                  {/* Left face of car (dark underside) */}
+                  <polygon points="-10,6 -10,26 -14,24 -14,8" fill="#0A0908"/>
+                  {/* Right face highlight */}
+                  <polygon points="58,6 58,26 62,22 62,8" fill="#252218"/>
+
+                  {/* WHEELS */}
+                  {/* Front-left */}
+                  <ellipse cx="-2" cy="27" rx="7" ry="4" fill="#2A2820"/>
+                  <ellipse cx="-2" cy="27" rx="5" ry="2.8" fill="#383530"/>
+                  <ellipse cx="-2" cy="27" rx="2.5" ry="1.5" fill="#888"/>
+                  {/* Front-right */}
+                  <ellipse cx="50" cy="27" rx="7" ry="4" fill="#2A2820"/>
+                  <ellipse cx="50" cy="27" rx="5" ry="2.8" fill="#383530"/>
+                  <ellipse cx="50" cy="27" rx="2.5" ry="1.5" fill="#888"/>
+                  {/* Rear wheels (smaller, behind) */}
+                  <ellipse cx="12" cy="28" rx="6" ry="3.2" fill="#222018"/>
+                  <ellipse cx="38" cy="28" rx="6" ry="3.2" fill="#222018"/>
+
+                  {/* Headlight */}
+                  <ellipse cx="59" cy="10" rx="4" ry="2.5" fill="#FFE8A0" opacity="0.9"/>
+                  <ellipse cx="59" cy="10" rx="8" ry="4" fill="#FFD060" opacity="0.2"/>
+                  {/* Taillight */}
+                  <ellipse cx="-11" cy="18" rx="3" ry="2" fill="#C83030" opacity="0.8"/>
+
+                  {/* Chrome trim line */}
+                  <line x1="-10" y1="19" x2="58" y2="19" stroke="#606050" strokeWidth="0.7" opacity="0.5"/>
+
+                  {/* Side mirror */}
+                  <polygon points="-12,6 -10,5 -10,8 -12,8" fill="#2A2820"/>
+
+                  {/* Roof antenna */}
+                  <line x1="42" y1="-6" x2="44" y2="-12" stroke="#444" strokeWidth="1" opacity="0.6"/>
+                </g>
+
+                {/* Ambient sparkle dots */}
+                <circle cx="148" cy="340" r="2.5" fill="#C8851A" opacity="0.2"/>
+                <circle cx="520" cy="310" r="2"   fill="#C8851A" opacity="0.18"/>
+                <circle cx="340" cy="390" r="2"   fill="#C8851A" opacity="0.15"/>
+                <circle cx="230" cy="368" r="1.5" fill="#C8851A" opacity="0.18"/>
+                <circle cx="460" cy="360" r="1.5" fill="#C8851A" opacity="0.16"/>
+                <circle cx="580" cy="270" r="1.8" fill="#C8851A" opacity="0.12"/>
+
+                </g>
+              </svg>
+
+              {/* Floating tooltip */}
               <motion.div
-                className="absolute top-[20%] left-[10%] hidden md:flex"
+                className="absolute top-[32%] left-[44%] bg-white rounded-2xl p-3 flex items-center gap-3 shadow-lg border border-amber-200/30 pointer-events-none"
                 animate={{
-                  y: [0, -10, 0],
-                  rotate: [0, 2, 0],
-                }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                }}
-              >
-                <GlassCard tier={2} className="p-4 flex items-center gap-4 backdrop-blur-xl bg-glass-white border-glass-border shadow-glow">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-soft-gold/20 to-champagne/20 flex items-center justify-center border border-soft-gold/30">
-                    <div className="w-3 h-3 bg-soft-gold rounded-full animate-pulse-glow shadow-glow" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-text-primary">Your ride is 2 min away</p>
-                    <p className="text-xs text-text-secondary">Ahmad • Toyota Corolla</p>
-                  </div>
-                </GlassCard>
-              </motion.div>
-              
-              <motion.div
-                className="absolute bottom-[20%] right-[10%] hidden md:flex"
-                animate={{
-                  y: [0, -8, 0],
-                  rotate: [0, -2, 0],
+                  y: [0, -7, 0],
                 }}
                 transition={{
                   duration: 3.5,
                   repeat: Infinity,
                   ease: 'easeInOut',
-                  delay: 0.5,
+                  delay: 1.5,
                 }}
               >
-                <GlassCard tier={1} className="px-4 py-2 flex items-center gap-2 backdrop-blur-xl bg-glass-white border-glass-border shadow-glow">
-                  <Shield size={16} className="text-amber-500" />
-                  <span className="text-sm font-medium text-text-secondary">Safe & Verified</span>
-                </GlassCard>
+                <div className="w-2.5 h-2.5 bg-amber-600 rounded-full animate-pulse shadow-lg" />
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Your ride is 2 min away</p>
+                  <p className="text-xs text-gray-500">Ahmad · Toyota Corolla</p>
+                </div>
               </motion.div>
-            </ParallaxWrapper>
+
+              {/* Safe badge */}
+              <motion.div
+                className="absolute bottom-[22%] right-[6%] bg-white/90 backdrop-blur-sm border border-amber-200/30 rounded-full px-4 py-2 flex items-center gap-2 text-sm text-gray-600 pointer-events-none"
+                animate={{
+                  y: [0, -7, 0],
+                }}
+                transition={{
+                  duration: 4.2,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: 2,
+                }}
+              >
+                <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                <span className="font-medium">Safe & Verified</span>
+              </motion.div>
+            </div>
           </div>
         </section>
 

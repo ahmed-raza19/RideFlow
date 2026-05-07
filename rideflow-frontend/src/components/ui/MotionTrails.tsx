@@ -19,14 +19,11 @@ export function MotionTrails() {
   const springX = useSpring(mouseX, { stiffness: 100, damping: 20 });
   const springY = useSpring(mouseY, { stiffness: 100, damping: 20 });
 
-  // Generate random light trails
+  // Generate fewer light trails for better performance
   const trails: Trail[] = [
-    { id: 1, startX: 10, startY: 20, endX: 90, endY: 30, delay: 0, duration: 8 },
-    { id: 2, startX: 80, startY: 10, endX: 20, endY: 80, delay: 1, duration: 10 },
-    { id: 3, startX: 15, startY: 70, endX: 85, endY: 25, delay: 2, duration: 9 },
-    { id: 4, startX: 70, startY: 85, endX: 25, endY: 15, delay: 3, duration: 11 },
-    { id: 5, startX: 30, startY: 10, endX: 75, endY: 75, delay: 1.5, duration: 7 },
-    { id: 6, startX: 90, startY: 50, endX: 10, endY: 45, delay: 2.5, duration: 12 },
+    { id: 1, startX: 10, startY: 20, endX: 90, endY: 30, delay: 0, duration: 12 },
+    { id: 2, startX: 80, startY: 10, endX: 20, endY: 80, delay: 2, duration: 15 },
+    { id: 3, startX: 15, startY: 70, endX: 85, endY: 25, delay: 4, duration: 14 },
   ];
 
   useEffect(() => {
@@ -130,62 +127,49 @@ export function MotionTrails() {
           );
         })}
         
-        {/* Additional flowing lines with enhanced depth */}
-        {[...Array(8)].map((_, i) => {
-          const depthLevel = i % 3;
-          const opacityMap = [0.6, 0.3, 0.15];
-          const strokeWidthMap = [2, 1.5, 1];
-          const filterMap = ['glow-strong', 'glow', 'blur-subtle'];
-          
-          return (
-            <motion.path
-              key={`flow-${i}`}
-              d={`M ${20 + i * 10} ${10 + i * 5} Q ${50 + i * 5} ${50 - i * 3} ${80 + i * 8} ${90 - i * 6}`}
-              stroke={i % 2 === 0 ? "#F59E0B" : "#FFFEF9"}
-              strokeWidth={strokeWidthMap[depthLevel]}
-              fill="none"
-              opacity={opacityMap[depthLevel]}
-              filter={`url(#${filterMap[depthLevel]})`}
-              animate={{
-                pathLength: [0, 1],
-                opacity: [0, opacityMap[depthLevel], 0],
-              }}
-              transition={{
-                duration: 6 + i * 0.5 + depthLevel * 2,
-                repeat: Infinity,
-                delay: i * 0.8 + depthLevel * 0.3,
-                ease: "easeInOut",
-              }}
-              style={{
-                x: useTransform(springX, [-15, 15], [-10 + depthLevel * 3, 10 - depthLevel * 3]),
-                y: useTransform(springY, [-15, 15], [-10 + depthLevel * 3, 10 - depthLevel * 3]),
-              }}
-            />
-          );
-        })}
+        {/* Simplified flowing lines */}
+        {[...Array(4)].map((_, i) => (
+          <motion.path
+            key={`flow-${i}`}
+            d={`M ${20 + i * 15} ${10 + i * 8} Q ${50 + i * 8} ${50 - i * 5} ${80 + i * 5} ${90 - i * 8}`}
+            stroke={i % 2 === 0 ? "#F59E0B" : "#FFFEF9"}
+            strokeWidth="1"
+            fill="none"
+            opacity={0.3}
+            filter="url(#glow)"
+            animate={{
+              pathLength: [0, 1],
+              opacity: [0, 0.3, 0],
+            }}
+            transition={{
+              duration: 8 + i * 1,
+              repeat: Infinity,
+              delay: i * 1.5,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
       </svg>
       
-      {/* Floating light particles */}
-      {[...Array(15)].map((_, i) => (
+      {/* Reduced floating light particles */}
+      {[...Array(8)].map((_, i) => (
         <motion.div
           key={`particle-${i}`}
           className="absolute w-1 h-1 rounded-full"
           style={{
             left: `${Math.random() * 100}%`,
             top: `${Math.random() * 100}%`,
-            backgroundColor: i % 3 === 0 ? '#F59E0B' : '#FFFEF9',
-            boxShadow: `0 0 6px ${i % 3 === 0 ? '#F59E0B' : '#FFFEF9'}`,
+            backgroundColor: i % 2 === 0 ? '#F59E0B' : '#FFFEF9',
+            boxShadow: `0 0 4px ${i % 2 === 0 ? '#F59E0B' : '#FFFEF9'}`,
           }}
           animate={{
-            x: [0, 100 - Math.random() * 200],
-            y: [0, -50 - Math.random() * 100],
-            opacity: [0, 1, 0],
+            opacity: [0, 0.8, 0],
             scale: [0, 1, 0],
           }}
           transition={{
-            duration: 8 + Math.random() * 4,
+            duration: 6 + Math.random() * 3,
             repeat: Infinity,
-            delay: Math.random() * 5,
+            delay: Math.random() * 3,
             ease: "easeInOut",
           }}
         />
