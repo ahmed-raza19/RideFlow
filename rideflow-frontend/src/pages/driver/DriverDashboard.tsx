@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, DollarSign, User, MapPin } from 'lucide-react';
+import { Radio, DollarSign, User, MapPin, Bell, Settings } from 'lucide-react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -11,9 +11,17 @@ import { Badge } from '../../components/ui/Badge';
 import { toast } from '../../components/ui/Toast';
 import { driverAPI } from '../../lib/driver';
 import { fadeSlideUp } from '../../motion/presets';
+import { ProfileEditModal } from '../../components/driver/ProfileEditModal';
+import { VehicleForm, VehicleCard } from '../../components/driver/VehicleForm';
+import { SafetyPanel } from '../../components/driver/SafetyPanel';
+import { NotificationCenter } from '../../components/driver/NotificationCenter';
 
 export function DriverDashboard() {
   const [activeTab, setActiveTab] = useState('live');
+  const [profileEditOpen, setProfileEditOpen] = useState(false);
+  const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<any>(null);
+  const [profile, setProfile] = useState<any>({});
 
   const navItems = [
     { id: 'live', label: 'Live', icon: <Radio size={20} /> },
@@ -21,10 +29,38 @@ export function DriverDashboard() {
     { id: 'profile', label: 'Profile', icon: <User size={20} /> },
   ];
 
+  const fetchProfile = async () => {
+    try {
+      const response = await driverAPI.getProfile();
+      setProfile(response.data.data);
+    } catch (error) {
+      console.error('Failed to fetch profile:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
   return (
     <DashboardLayout>
       <Sidebar items={navItems} activeId={activeTab} onSelect={setActiveTab} title="Driver" />
       <main className="flex-1 lg:ml-64 p-4 md:p-8 pb-24 lg:pb-8 w-full max-w-[1200px] mx-auto">
+        {/* Header with Notifications */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-display text-white mb-2">Driver Dashboard</h1>
+            <p className="text-text-muted">Manage your rides and earnings</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <NotificationCenter />
+            <Button variant="glass" onClick={() => setProfileEditOpen(true)}>
+              <Settings size={20} className="mr-2" />
+              Settings
+            </Button>
+          </div>
+        </div>
+
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -34,17 +70,50 @@ export function DriverDashboard() {
             exit="exit"
             className="h-full"
           >
-            {activeTab === 'live' && <LiveTab />}
+            {activeTab === 'live' && (
+              <LiveTab 
+                profile={profile} 
+                onProfileUpdate={fetchProfile}
+              />
+            )}
             {activeTab === 'earnings' && <EarningsTab />}
-            {activeTab === 'profile' && <ProfileTab />}
+            {activeTab === 'profile' && (
+              <ProfileTab 
+                profile={profile}
+                onEditProfile={() => setProfileEditOpen(true)}
+                onAddVehicle={() => {
+                  setEditingVehicle(null);
+                  setVehicleFormOpen(true);
+                }}
+                onEditVehicle={(vehicle: any) => {
+                  setEditingVehicle(vehicle);
+                  setVehicleFormOpen(true);
+                }}
+                onUpdate={fetchProfile}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </main>
+
+      {/* Modals */}
+      <ProfileEditModal
+        isOpen={profileEditOpen}
+        onClose={() => setProfileEditOpen(false)}
+        profile={profile}
+        onUpdate={fetchProfile}
+      />
+      <VehicleForm
+        isOpen={vehicleFormOpen}
+        onClose={() => setVehicleFormOpen(false)}
+        vehicle={editingVehicle}
+        onUpdate={fetchProfile}
+      />
     </DashboardLayout>
   );
 }
 
-function LiveTab() {
+function LiveTab({ profile, onProfileUpdate }: { profile: any; onProfileUpdate: () => void }) {
   const [isOnline, setIsOnline] = useState(false);
   const [incomingRide, setIncomingRide] = useState<any>(null);
   const [activeRide, setActiveRide] = useState<any>(null);
@@ -71,7 +140,7 @@ function LiveTab() {
       }
     };
     init();
-  }, []);
+  }, [onProfileUpdate]);
 
   // Polling for incoming rides if online and no active ride
   useEffect(() => {
@@ -197,6 +266,9 @@ function LiveTab() {
                 <Button variant="neon" className="w-full" onClick={handleComplete}>Complete Ride</Button>
               )}
             </GlassCard>
+
+            {/* Safety Panel for Active Rides */}
+            <SafetyPanel activeRide={activeRide} className="mt-6" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -254,48 +326,74 @@ function EarningsTab() {
   );
 }
 
-function ProfileTab() {
-  const [profile, setProfile] = useState<any>({});
+function ProfileTab({ 
+  profile, 
+  onEditProfile, 
+  onAddVehicle, 
+  onEditVehicle, 
+  onUpdate 
+}: {
+  profile: any;
+  onEditProfile: () => void;
+  onAddVehicle: () => void;
+  onEditVehicle: (vehicle: any) => void;
+  onUpdate: () => void;
+}) {
   const [vehicles, setVehicles] = useState<any[]>([]);
+  const [localProfile, setLocalProfile] = useState<any>(profile);
 
   useEffect(() => {
-    driverAPI.getProfile().then(r => setProfile(r.data.data)).catch(console.error);
-    driverAPI.getVehicles().then(r => setVehicles(r.data.data)).catch(console.error);
-  }, []);
+    setLocalProfile(profile);
+  }, [profile]);
 
-  if (!profile.DriverID) return null;
+  useEffect(() => {
+    driverAPI.getVehicles().then(r => setVehicles(r.data.data)).catch(console.error);
+  }, [onUpdate]);
+
+  if (!localProfile.DriverID) return null;
 
   return (
     <GlassCard tier={1} className="p-6 max-w-2xl mx-auto">
       <div className="flex items-center gap-6 mb-8 pb-8 border-b border-glass-border">
-        <div className="w-20 h-20 rounded-full bg-amber-600 flex items-center justify-center text-2xl font-display text-bg-base">
-          {profile.FullName?.charAt(0)}
+        <div className="w-20 h-20 rounded-full bg-amber-600 flex items-center justify-center text-2xl font-display text-bg-base overflow-hidden">
+          {localProfile.ProfilePhoto ? (
+            <img src={localProfile.ProfilePhoto} alt="Profile" className="w-full h-full object-cover" />
+          ) : (
+            localProfile.FullName?.charAt(0)
+          )}
         </div>
         <div>
-          <h2 className="text-2xl font-display text-white mb-1">{profile.FullName}</h2>
+          <h2 className="text-2xl font-display text-white mb-1">{localProfile.FullName}</h2>
           <div className="flex gap-2 mt-2">
-            <Badge variant={profile.VerificationStatus === 'Verified' ? 'success' : 'warning'}>{profile.VerificationStatus}</Badge>
-            <Badge variant="info">{profile.CurrentCity || 'Unknown Location'}</Badge>
+            <Badge variant={localProfile.VerificationStatus === 'Verified' ? 'success' : 'warning'}>{localProfile.VerificationStatus}</Badge>
+            <Badge variant="info">{localProfile.CurrentCity || 'Unknown Location'}</Badge>
           </div>
         </div>
       </div>
       
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-medium text-white">Registered Vehicles</h3>
-        <Button variant="glass" size="sm">Add Vehicle</Button>
+        <Button variant="glass" size="sm" onClick={onAddVehicle}>
+          Add Vehicle
+        </Button>
       </div>
       
       <div className="flex flex-col gap-3">
-        {vehicles.length === 0 ? <p className="text-text-muted text-sm">No vehicles registered.</p> : null}
-        {vehicles.map(v => (
-          <div key={v.VehicleID} className="p-4 border border-glass-border rounded-radius-md bg-glass-bg-light flex justify-between items-center">
-            <div>
-              <div className="font-medium text-white">{v.Make} {v.Model} ({v.Year})</div>
-              <div className="text-sm text-text-muted">{v.LicensePlate} • {v.VehicleType}</div>
-            </div>
-            <Badge variant={v.VerificationStatus === 'Verified' ? 'success' : 'warning'}>{v.VerificationStatus}</Badge>
-          </div>
-        ))}
+        {vehicles.length === 0 ? (
+          <p className="text-text-muted text-sm">No vehicles registered.</p>
+        ) : (
+          <AnimatePresence>
+            {vehicles.map(v => (
+              <VehicleCard
+                key={v.VehicleID}
+                vehicle={v}
+                onEdit={() => onEditVehicle(v)}
+                onDelete={() => {}}
+                onUpdate={onUpdate}
+              />
+            ))}
+          </AnimatePresence>
+        )}
       </div>
     </GlassCard>
   );

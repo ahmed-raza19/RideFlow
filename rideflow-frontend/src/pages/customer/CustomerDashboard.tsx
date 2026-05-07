@@ -13,11 +13,6 @@ import { toast } from '../../components/ui/Toast';
 import { riderAPI } from '../../lib/rider';
 import { useWebSocket } from '../../lib/websocket';
 import { SafetyPanel } from '../../components/safety/SafetyPanel';
-// Temporarily using basic components to stop crash
-// import { Dropdown } from '../../components/ui/Dropdown';
-// import { LocationCard } from '../../components/ui/LocationCard';
-// import { LoadingSkeleton, LoadingSpinner, EmptyState, RideLoadingState } from '../../components/ui/LoadingStates';
-// import { PremiumVehicleCard, VehicleStatsBox } from '../../components/ui/PremiumVehicleCard';
 import { fadeSlideUp } from '../../motion/presets';
 
 export function CustomerDashboard() {
@@ -69,9 +64,7 @@ function BookTab() {
     { LocationID: 1, LocationName: 'Downtown Plaza', City: 'Karachi', Street: 'Main Boulevard' },
     { LocationID: 2, LocationName: 'Airport Terminal', City: 'Karachi', Street: 'Jinnah Avenue' },
     { LocationID: 3, LocationName: 'Beach Resort', City: 'Karachi', Street: 'Sea View Road' },
-    { LocationID: 4, LocationName: 'Shopping Mall', City: 'Karachi', Street: 'Gulshan-e-Iqbal' },
-    { LocationID: 5, LocationName: 'University Campus', City: 'Karachi', Street: 'University Road' },
-    { LocationID: 6, LocationName: 'Tech Park', City: 'Karachi', Street: 'IT Park Avenue' }
+    { LocationID: 4, LocationName: 'Shopping Mall', City: 'Karachi', Street: 'Gulshan-e-Iqbal' }
   ];
 
   const mockVehicles = [
@@ -135,42 +128,18 @@ function BookTab() {
   };
 
   useEffect(() => {
-    // Load locations and vehicles - using mock data temporarily for testing
-    console.log('Loading locations and vehicles with mock data...');
+    // Simplified data loading - just set mock data immediately
+    console.log('Setting mock data immediately...');
+    setLocations(mockLocations);
+    setVehicles(mockVehicles);
     
-    // Temporarily use mock data to test UI
-    setTimeout(() => {
-      console.log('Setting mock data...');
-      setLocations(mockLocations);
-      setVehicles(mockVehicles);
-      
-      // Set default pickup and dropoff
-      if (mockLocations.length >= 2) {
-        setPickup(mockLocations[0].LocationID);
-        setDropoff(mockLocations[1].LocationID);
-      }
-      
-      toast.success('Mock data loaded for testing');
-    }, 1000);
-
-    // Try to load real data in background
-    Promise.all([
-      riderAPI.getLocations(),
-      riderAPI.getVehicles()
-    ]).then(([locationsRes, vehiclesRes]) => {
-      console.log('Real API data loaded:', locationsRes, vehiclesRes);
-      setLocations(locationsRes.data.data);
-      setVehicles(vehiclesRes.data.data);
-      
-      // Set default pickup and dropoff
-      if (locationsRes.data.data.length >= 2) {
-        setPickup(locationsRes.data.data[0].LocationID);
-        setDropoff(locationsRes.data.data[1].LocationID);
-      }
-    }).catch((error) => {
-      console.error('Error loading real data:', error);
-      // Keep using mock data if API fails
-    });
+    // Set default pickup and dropoff
+    if (mockLocations.length >= 2) {
+      setPickup(mockLocations[0].LocationID);
+      setDropoff(mockLocations[1].LocationID);
+    }
+    
+    console.log('Mock data set:', { locations: mockLocations.length, vehicles: mockVehicles.length });
     
     // Check if rider already has an active ride
     riderAPI.getRideHistory().then(res => {
@@ -238,7 +207,7 @@ function BookTab() {
     <div className="flex flex-col gap-8 h-full">
       {step < 4 && (
         <div className="flex items-center justify-center mb-8">
-          <div className="flex items-center gap-2 bg-glass-white/80 backdrop-blur-xl border border-glass-border rounded-full px-6 py-3 shadow-glow">
+          <div className="flex items-center gap-3 bg-gradient-to-r from-glass-bg-light via-glass-bg to-glass-bg-light backdrop-blur-xl border-2 border-soft-gold/30 rounded-full px-8 py-4 shadow-glow-lg">
             {rideStatuses.map((status, index) => {
               const currentStatus = getCurrentRideStatus();
               const isActive = currentStatus === status.id;
@@ -247,8 +216,8 @@ function BookTab() {
               return (
                 <div key={status.id} className="flex items-center">
                   <motion.div
-                    className="flex flex-col items-center cursor-pointer group"
-                    whileHover={{ scale: 1.05 }}
+                    className="flex flex-col items-center cursor-pointer group relative"
+                    whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => {
                       // Interactive: Allow clicking to view details or take actions
@@ -258,16 +227,24 @@ function BookTab() {
                       }
                     }}
                   >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg font-medium transition-all duration-300 ${
+                    <div className={`relative w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-bold transition-all duration-500 ${
                       isActive 
-                        ? 'bg-gradient-to-br from-amber-500 to-champagne text-white shadow-glow-lg animate-pulse'
+                        ? 'bg-gradient-to-br from-soft-gold via-amber-500 to-champagne text-white shadow-glow-lg ring-2 ring-amber-500/50 animate-pulse'
                         : isCompleted 
-                          ? 'bg-green-500 text-white'
-                          : 'bg-gray-600 text-gray-300'
+                          ? 'bg-gradient-to-br from-emerald-500 to-green-500 text-white shadow-glow'
+                          : 'bg-glass-bg-light border-2 border-glass-border text-text-muted'
                     }`}>
                       {status.icon}
+                      {isActive && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                          className="absolute -inset-1 rounded-2xl bg-amber-500/20 blur-md"
+                        />
+                      )}
                     </div>
-                    <span className={`text-xs font-medium mt-1 px-2 py-1 rounded-full transition-all duration-300 ${
+                    <span className={`text-xs font-medium mt-2 px-2 py-1 rounded-full transition-all duration-300 ${
                       isActive 
                         ? 'bg-amber-500/20 text-amber-600 border border-amber-500/30'
                         : isCompleted
@@ -280,15 +257,15 @@ function BookTab() {
                       <motion.div
                         initial={{ opacity: 0, y: -5 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="absolute -top-8 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap"
+                        className="absolute -top-8 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap z-10"
                       >
                         {status.description}
                       </motion.div>
                     )}
                   </motion.div>
                   {index < rideStatuses.length - 1 && (
-                    <div className={`w-8 h-0.5 mx-1 transition-all duration-500 ${
-                      isCompleted ? 'bg-green-500' : 'bg-gray-600'
+                    <div className={`w-8 h-0.5 mx-2 transition-all duration-500 ${
+                      isCompleted ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-glow' : 'bg-glass-border'
                     }`} />
                   )}
                 </div>
@@ -300,9 +277,6 @@ function BookTab() {
 
       {step === 1 && (
         <div className="max-w-4xl mx-auto space-y-8">
-          <div className="text-center mb-4">
-            <p className="text-text-muted">Debug: Locations loaded: {locations.length}, Step: {step}</p>
-          </div>
           {locations.length === 0 ? (
             <GlassCard tier={2} className="p-8 text-center">
               <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center animate-pulse">
@@ -332,18 +306,25 @@ function BookTab() {
                         <p className="text-text-muted text-sm">Where should we pick you up?</p>
                       </div>
                     </div>
-                    <select 
-                      className="w-full bg-glass-bg-light border border-glass-border rounded-radius-md px-4 py-3 text-white outline-none hover:border-soft-gold/30 transition-colors"
-                      value={pickup || ''}
-                      onChange={(e) => setPickup(Number(e.target.value))}
-                    >
-                      <option value="">Select pickup location</option>
-                      {locations.map(l => (
-                        <option key={l.LocationID} value={l.LocationID} className="bg-gray-800 text-white">
-                          {l.City} - {l.LocationName}
+                    <div className="relative">
+                      <select 
+                        className="w-full bg-gradient-to-r from-glass-bg-light via-glass-bg to-glass-bg-light border-2 border-amber-500/30 rounded-2xl px-6 py-4 text-white outline-none hover:border-amber-500/50 focus:border-amber-500/70 transition-all duration-300 shadow-glow hover:shadow-glow-lg appearance-none cursor-pointer backdrop-blur-xl"
+                        value={pickup || ''}
+                        onChange={(e) => setPickup(Number(e.target.value))}
+                      >
+                        <option value="" disabled className="bg-gray-900 text-gray-400">
+                          {pickup ? locations.find(l => l.LocationID === pickup)?.LocationName + ' - ' + locations.find(l => l.LocationID === pickup)?.City || 'Select pickup location' : 'Select pickup location'}
                         </option>
-                      ))}
-                    </select>
+                        {locations.map(l => (
+                          <option key={l.LocationID} value={l.LocationID} className="bg-gray-900 text-white hover:bg-amber-500/20">
+                            {l.LocationName} - {l.City}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <MapPin className="text-amber-500" size={20} />
+                      </div>
+                    </div>
                   </div>
 
                   {/* Dropoff Location */}
@@ -357,18 +338,25 @@ function BookTab() {
                         <p className="text-text-muted text-sm">Where are you heading?</p>
                       </div>
                     </div>
-                    <select 
-                      className="w-full bg-glass-bg-light border border-glass-border rounded-radius-md px-4 py-3 text-white outline-none hover:border-soft-gold/30 transition-colors"
-                      value={dropoff || ''}
-                      onChange={(e) => setDropoff(Number(e.target.value))}
-                    >
-                      <option value="">Select dropoff location</option>
-                      {locations.map(l => (
-                        <option key={l.LocationID} value={l.LocationID} className="bg-gray-800 text-white">
-                          {l.City} - {l.LocationName}
+                    <div className="relative">
+                      <select 
+                        className="w-full bg-gradient-to-r from-glass-bg-light via-glass-bg to-glass-bg-light border-2 border-emerald-500/30 rounded-2xl px-6 py-4 text-white outline-none hover:border-emerald-500/50 focus:border-emerald-500/70 transition-all duration-300 shadow-glow hover:shadow-glow-lg appearance-none cursor-pointer backdrop-blur-xl"
+                        value={dropoff || ''}
+                        onChange={(e) => setDropoff(Number(e.target.value))}
+                      >
+                        <option value="" disabled className="bg-gray-900 text-gray-400">
+                          {dropoff ? locations.find(l => l.LocationID === dropoff)?.LocationName + ' - ' + locations.find(l => l.LocationID === dropoff)?.City || 'Select dropoff location' : 'Select dropoff location'}
                         </option>
-                      ))}
-                    </select>
+                        {locations.map(l => (
+                          <option key={l.LocationID} value={l.LocationID} className="bg-gray-900 text-white hover:bg-emerald-500/20">
+                            {l.LocationName} - {l.City}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <MapPin className="text-emerald-500" size={20} />
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -386,8 +374,8 @@ function BookTab() {
               {/* Popular Locations */}
               <GlassCard tier={2} className="p-6">
                 <h4 className="text-lg font-display mb-4 text-soft-gold">Popular Locations</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {locations.slice(0, 6).map(location => (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {locations.slice(0, 3).map(location => (
                     <motion.div
                       key={location.LocationID}
                       className="p-4 bg-glass-bg-light border border-glass-border rounded-lg cursor-pointer hover:border-soft-gold/50 transition-all duration-300"
@@ -718,7 +706,7 @@ function BookTab() {
               {/* Enhanced Ride Status Tracker for non-cancelled rides */}
               <GlassCard tier={2} className="p-6 backdrop-blur-xl bg-glass-white border-glass-border">
                 <div className="flex items-center justify-center mb-6">
-                  <div className="flex items-center gap-2 bg-glass-white/80 backdrop-blur-xl border border-glass-border rounded-full px-6 py-3 shadow-glow">
+                  <div className="flex items-center gap-3 bg-gradient-to-r from-glass-bg-light via-glass-bg to-glass-bg-light backdrop-blur-xl border-2 border-soft-gold/30 rounded-full px-8 py-4 shadow-glow-lg">
                     {rideStatuses.map((status, index) => {
                       const currentStatus = getCurrentRideStatus();
                       const isActive = currentStatus === status.id;
@@ -727,38 +715,54 @@ function BookTab() {
                       return (
                         <div key={status.id} className="flex items-center">
                           <motion.div
-                            className="flex flex-col items-center cursor-pointer group"
-                            whileHover={{ scale: 1.05 }}
+                            className="flex flex-col items-center cursor-pointer group relative"
+                            whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={() => {
-                              // Interactive: Show detailed status information
-                              if (isActive || isCompleted) {
-                                toast.info(`${status.label}: ${status.description}`);
+                              if (isActive && rideState) {
+                                console.log('Show details for status:', status.label);
                               }
                             }}
                           >
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-all duration-300 ${
+                            <div className={`relative w-10 h-10 rounded-2xl flex items-center justify-center text-lg font-bold transition-all duration-500 ${
                               isActive 
-                                ? 'bg-gradient-to-br from-amber-500 to-champagne text-white shadow-glow-lg animate-pulse'
+                                ? 'bg-gradient-to-br from-soft-gold via-amber-500 to-champagne text-white shadow-glow-lg ring-2 ring-amber-500/50 animate-pulse'
                                 : isCompleted 
-                                  ? 'bg-green-500 text-white'
-                                  : 'bg-gray-600 text-gray-300'
+                                  ? 'bg-gradient-to-br from-emerald-500 to-green-500 text-white shadow-glow'
+                                  : 'bg-glass-bg-light border-2 border-glass-border text-text-muted'
                             }`}>
                               {status.icon}
+                              {isActive && (
+                                <motion.div
+                                  initial={{ scale: 0 }}
+                                  animate={{ scale: [1, 1.2, 1] }}
+                                  transition={{ duration: 2, repeat: Infinity }}
+                                  className="absolute -inset-1 rounded-2xl bg-amber-500/20 blur-md"
+                                />
+                              )}
                             </div>
-                            <span className={`text-xs font-medium mt-1 px-1 py-0.5 rounded transition-all duration-300 ${
+                            <span className={`text-xs font-medium mt-2 px-2 py-1 rounded-full transition-all duration-300 ${
                               isActive 
-                                ? 'bg-amber-500/20 text-amber-600'
+                                ? 'bg-amber-500/20 text-amber-600 border border-amber-500/30'
                                 : isCompleted
-                                  ? 'bg-green-500/20 text-green-600'
-                                  : 'bg-gray-500/20 text-gray-400'
+                                  ? 'bg-green-500/20 text-green-600 border border-green-500/30'
+                                  : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
                             }`}>
                               {status.label}
                             </span>
+                            {isActive && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="absolute -top-8 bg-gray-800 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap z-10"
+                              >
+                                {status.description}
+                              </motion.div>
+                            )}
                           </motion.div>
                           {index < rideStatuses.length - 1 && (
-                            <div className={`w-6 h-0.5 mx-1 transition-all duration-500 ${
-                              isCompleted ? 'bg-green-500' : 'bg-gray-600'
+                            <div className={`w-6 h-0.5 mx-2 transition-all duration-500 ${
+                              isCompleted ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-glow' : 'bg-glass-border'
                             }`} />
                           )}
                         </div>

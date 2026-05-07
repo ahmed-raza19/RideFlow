@@ -15,9 +15,26 @@ router.patch ('/location',                  C.updateLocation);
 // ─── Vehicles ─────────────────────────────────────────────────
 router.get   ('/vehicles',                  C.getMyVehicles);
 router.post  ('/vehicles',                  C.addVehicle);
+router.patch ('/vehicles/:id',               C.editVehicle);
+router.delete('/vehicles/:id',               C.removeVehicle);
+
+// ─── Profile Enhancements ───────────────────────────────────
+router.post  ('/profile/photo',             C.uploadProfilePhoto);
+router.post  ('/documents',                  C.uploadDocuments);
+router.post  ('/verification-request',       C.requestVerification);
+
+// ─── Notifications ───────────────────────────────────────────
+router.get   ('/notifications',              C.getNotifications);
+router.patch ('/notifications/:id/read',    C.markNotificationRead);
+
+// ─── Safety Features ───────────────────────────────────────────
+router.post  ('/sos',                        C.sendSOS);
+router.post  ('/report-rider',               C.reportRider);
+router.post  ('/share-trip',                 C.shareTrip);
 
 // ─── Rides ────────────────────────────────────────────────────
 router.get   ('/rides/incoming',            C.getIncomingRides);
+router.post  ('/rides/request',             C.createRideRequest);
 router.get   ('/rides',                     C.getMyRides);
 router.patch ('/rides/:id/accept',          C.acceptRide);
 router.patch ('/rides/:id/start',           C.startRide);

@@ -4,10 +4,13 @@ const express = require('express');
 const cors    = require('cors');
 const http    = require('http');
 const { globalErrorHandler } = require('./utils/helpers');
-const wsServer = require('./utils/websocket');
+const { initializeSocket } = require('./config/socket');
 
 const app = express();
 const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = initializeSocket(server);
 
 // ─── Middleware ───────────────────────────────────────────────
 app.use(cors());
@@ -45,12 +48,9 @@ app.use(globalErrorHandler);
 // ─── Start ────────────────────────────────────────────────────
 const PORT = process.env.PORT || 5000;
 
-// Initialize WebSocket server
-wsServer.initialize(server);
-
 server.listen(PORT, () => {
   console.log(`🚀  RideFlow API running on http://localhost:${PORT}`);
-  console.log(`    WebSocket: ws://localhost:${PORT}`);
+  console.log(`    Socket.IO: ws://localhost:${PORT}`);
   console.log(`    ENV: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`    Connected WebSocket clients: ${wsServer.getConnectedClients()}`);
+  console.log(`    Real-time features enabled`);
 });
