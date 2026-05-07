@@ -13,10 +13,11 @@ import { toast } from '../../components/ui/Toast';
 import { riderAPI } from '../../lib/rider';
 import { useWebSocket } from '../../lib/websocket';
 import { SafetyPanel } from '../../components/safety/SafetyPanel';
-import { Dropdown } from '../../components/ui/Dropdown';
-import { LocationCard } from '../../components/ui/LocationCard';
-import { LoadingSkeleton, LoadingSpinner, EmptyState, RideLoadingState } from '../../components/ui/LoadingStates';
-import { PremiumVehicleCard, VehicleStatsBox } from '../../components/ui/PremiumVehicleCard';
+// Temporarily using basic components to stop crash
+// import { Dropdown } from '../../components/ui/Dropdown';
+// import { LocationCard } from '../../components/ui/LocationCard';
+// import { LoadingSkeleton, LoadingSpinner, EmptyState, RideLoadingState } from '../../components/ui/LoadingStates';
+// import { PremiumVehicleCard, VehicleStatsBox } from '../../components/ui/PremiumVehicleCard';
 import { fadeSlideUp } from '../../motion/presets';
 
 export function CustomerDashboard() {
@@ -303,14 +304,14 @@ function BookTab() {
             <p className="text-text-muted">Debug: Locations loaded: {locations.length}, Step: {step}</p>
           </div>
           {locations.length === 0 ? (
-            <EmptyState 
-              icon={<div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center">
-                <MapPin className="text-amber-500" size={16} />
-              </div>}
-              title="Loading Locations"
-              description="Loading available locations..."
-              action={<LoadingSpinner />}
-            />
+            <GlassCard tier={2} className="p-8 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-amber-500/20 border border-amber-500/50 flex items-center justify-center animate-pulse">
+                <MapPin className="text-amber-500" size={24} />
+              </div>
+              <h3 className="text-xl font-display mb-3 text-white">Loading Locations</h3>
+              <p className="text-text-muted mb-4">Loading available locations...</p>
+              <div className="w-8 h-8 mx-auto border-2 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+            </GlassCard>
           ) : (
             <>
               <GlassCard tier={3} className="p-8 backdrop-blur-xl bg-glass-white border-glass-border hover:border-soft-gold/30 transition-all duration-300 shadow-glow-lg">
@@ -331,20 +332,18 @@ function BookTab() {
                         <p className="text-text-muted text-sm">Where should we pick you up?</p>
                       </div>
                     </div>
-                    <Dropdown
-                      options={locations.map(l => ({
-                        value: l.LocationID,
-                        label: l.LocationName,
-                        subtitle: `${l.City}${l.Street ? `, ${l.Street}` : ''}`,
-                        icon: <MapPin size={16} />
-                      }))}
+                    <select 
+                      className="w-full bg-glass-bg-light border border-glass-border rounded-radius-md px-4 py-3 text-white outline-none hover:border-soft-gold/30 transition-colors"
                       value={pickup || ''}
-                      onChange={(value) => setPickup(Number(value))}
-                      placeholder="Select pickup location"
-                      variant="pickup"
-                      searchable={true}
-                      icon={<MapPin size={20} />}
-                    />
+                      onChange={(e) => setPickup(Number(e.target.value))}
+                    >
+                      <option value="">Select pickup location</option>
+                      {locations.map(l => (
+                        <option key={l.LocationID} value={l.LocationID} className="bg-gray-800 text-white">
+                          {l.City} - {l.LocationName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   {/* Dropoff Location */}
@@ -358,20 +357,18 @@ function BookTab() {
                         <p className="text-text-muted text-sm">Where are you heading?</p>
                       </div>
                     </div>
-                    <Dropdown
-                      options={locations.map(l => ({
-                        value: l.LocationID,
-                        label: l.LocationName,
-                        subtitle: `${l.City}${l.Street ? `, ${l.Street}` : ''}`,
-                        icon: <MapPin size={16} />
-                      }))}
+                    <select 
+                      className="w-full bg-glass-bg-light border border-glass-border rounded-radius-md px-4 py-3 text-white outline-none hover:border-soft-gold/30 transition-colors"
                       value={dropoff || ''}
-                      onChange={(value) => setDropoff(Number(value))}
-                      placeholder="Select dropoff location"
-                      variant="dropoff"
-                      searchable={true}
-                      icon={<MapPin size={20} />}
-                    />
+                      onChange={(e) => setDropoff(Number(e.target.value))}
+                    >
+                      <option value="">Select dropoff location</option>
+                      {locations.map(l => (
+                        <option key={l.LocationID} value={l.LocationID} className="bg-gray-800 text-white">
+                          {l.City} - {l.LocationName}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -391,9 +388,11 @@ function BookTab() {
                 <h4 className="text-lg font-display mb-4 text-soft-gold">Popular Locations</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {locations.slice(0, 6).map(location => (
-                    <LocationCard
+                    <motion.div
                       key={location.LocationID}
-                      location={location}
+                      className="p-4 bg-glass-bg-light border border-glass-border rounded-lg cursor-pointer hover:border-soft-gold/50 transition-all duration-300"
+                      whileHover={{ y: -2, scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         if (!pickup) {
                           setPickup(location.LocationID);
@@ -401,9 +400,26 @@ function BookTab() {
                           setDropoff(location.LocationID);
                         }
                       }}
-                      variant={pickup === location.LocationID ? 'pickup' : dropoff === location.LocationID ? 'dropoff' : 'default'}
-                      isSelected={pickup === location.LocationID || dropoff === location.LocationID}
-                    />
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                          pickup === location.LocationID 
+                            ? 'bg-amber-500/20 border-amber-500/50' 
+                            : dropoff === location.LocationID 
+                            ? 'bg-emerald-500/20 border-emerald-500/50'
+                            : 'bg-glass-bg border-glass-border'
+                        }`}>
+                          <MapPin className={pickup === location.LocationID ? 'text-amber-500' : dropoff === location.LocationID ? 'text-emerald-500' : 'text-soft-gold'} size={16} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-white">{location.LocationName}</div>
+                          <div className="text-sm text-text-muted">{location.City}</div>
+                        </div>
+                        {(pickup === location.LocationID || dropoff === location.LocationID) && (
+                          <div className="w-2 h-2 bg-soft-gold rounded-full" />
+                        )}
+                      </div>
+                    </motion.div>
                   ))}
                 </div>
               </GlassCard>
@@ -413,100 +429,118 @@ function BookTab() {
       )}
 
       {step === 2 && (
-        <div className="max-w-7xl mx-auto space-y-8">
-          {/* Header Section */}
-          <div className="text-center mb-8">
-            <h3 className="text-3xl font-display mb-4 bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Choose Your Premium Ride</h3>
-            <p className="text-text-muted text-lg">Experience luxury and comfort with our premium vehicle selection</p>
-          </div>
+        <div className="max-w-6xl mx-auto space-y-8">
+          <GlassCard tier={3} className="p-8 backdrop-blur-xl bg-glass-white border-glass-border">
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-display mb-4 bg-gradient-to-r from-amber-600 via-soft-gold to-champagne bg-clip-text text-transparent font-bold">Choose Your Ride</h3>
+              <p className="text-text-muted">Select the perfect vehicle for your journey</p>
+            </div>
 
-          {/* Vehicle Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <VehicleStatsBox 
-              type="economy"
-              stats={{
-                totalRides: 1247,
-                avgRating: 4.6,
-                avgFare: 250,
-                popularity: 65
-              }}
-            />
-            <VehicleStatsBox 
-              type="business"
-              stats={{
-                totalRides: 892,
-                avgRating: 4.8,
-                avgFare: 450,
-                popularity: 25
-              }}
-            />
-            <VehicleStatsBox 
-              type="bike"
-              stats={{
-                totalRides: 634,
-                avgRating: 4.5,
-                avgFare: 120,
-                popularity: 10
-              }}
-            />
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {vehicles.map((vehicle, index) => {
+                const isSelected = selectedVehicle?.Type === vehicle.Type;
+                return (
+                  <motion.div
+                    key={vehicle.Type}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1, duration: 0.5 }}
+                    whileHover={{ y: -8, scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <GlassCard 
+                      tier={isSelected ? 'amber' : 2}
+                      className={`p-6 cursor-pointer transition-all duration-300 backdrop-blur-xl relative overflow-hidden ${
+                        isSelected 
+                          ? 'bg-gradient-to-br from-soft-gold/20 to-champagne/20 border-soft-gold/50 shadow-glow-lg scale-105 ring-2 ring-soft-gold/30' 
+                          : 'bg-glass-white border-glass-border hover:border-soft-gold/30 hover:shadow-glow'
+                      }`}
+                      onClick={() => {
+                        setSelectedVehicle(vehicle);
+                        // Calculate estimated fare based on vehicle type
+                        const fareRange = vehicle.EstimatedFare.match(/PKR (\d+)-(\d+)/);
+                        if (fareRange) {
+                          setEstimatedFare((parseInt(fareRange[1]) + parseInt(fareRange[2])) / 2);
+                        }
+                      }}
+                    >
+                      {isSelected && (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute top-4 right-4 w-8 h-8 bg-soft-gold rounded-full flex items-center justify-center"
+                        >
+                          <span className="text-xs font-bold text-text-primary">✓</span>
+                        </motion.div>
+                      )}
 
-          {/* Premium Vehicle Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {vehicles.map((vehicle, index) => {
-              const isSelected = selectedVehicle?.Type === vehicle.Type;
-              return (
-                <motion.div
-                  key={vehicle.Type}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.2, duration: 0.6, type: 'spring' }}
-                >
-                  <PremiumVehicleCard
-                    vehicle={vehicle}
-                    isSelected={isSelected}
-                    onSelect={() => {
-                      setSelectedVehicle(vehicle);
-                      // Calculate estimated fare based on vehicle type
-                      const fareRange = vehicle.EstimatedFare.match(/PKR (\d+)-(\d+)/);
-                      if (fareRange) {
-                        setEstimatedFare((parseInt(fareRange[1]) + parseInt(fareRange[2])) / 2);
-                      }
-                    }}
-                  />
-                </motion.div>
-              );
-            })}
-          </div>
+                      <div className="text-center">
+                        <motion.div 
+                          className="text-6xl mb-4"
+                          whileHover={{ rotate: [0, -10, 10, 0] }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          {vehicle.Type === 'Bike' ? '🏍️' : vehicle.Type === 'Business' ? '💼' : '🚗'}
+                        </motion.div>
+                        <h4 className="font-bold text-xl mb-3 text-text-primary">{vehicle.Type}</h4>
+                        
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${vehicle.Available > 0 ? 'bg-green-500' : 'bg-red-500'} animate-pulse`} />
+                            <span className="text-sm text-text-muted">
+                              {vehicle.Available > 0 ? `${vehicle.Available} available` : 'Currently unavailable'}
+                            </span>
+                          </div>
+                          
+                          <div className="bg-glass-bg-light rounded-lg p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-text-muted">Est. Fare</span>
+                              <span className="text-sm font-bold text-amber-500">{vehicle.EstimatedFare}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-text-muted">Est. Time</span>
+                              <span className="text-xs text-white">{vehicle.EstimatedTime}</span>
+                            </div>
+                          </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-6 justify-center mt-12">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
+                          {vehicle.Vehicles.length > 0 && (
+                            <div className="text-xs text-text-muted">
+                              <div className="font-medium text-amber-600 mb-2">Top Drivers</div>
+                              <div className="space-y-1">
+                                {vehicle.Vehicles.slice(0, 2).map((v: any, idx: number) => (
+                                  <div key={idx} className="flex items-center justify-center gap-2">
+                                    <div className="w-4 h-4 bg-amber-500/20 rounded-full" />
+                                    <span>{v.DriverName}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </GlassCard>
+                  </motion.div>
+                );
+              })}
+            </div>
+
+            <div className="flex gap-4 justify-center mt-8">
               <Button 
                 variant="glass" 
-                className="px-12 py-4 text-lg font-semibold border-2 border-glass-border hover:border-soft-gold/50"
+                className="px-8 py-3"
                 onClick={() => setStep(1)}
               >
                 ← Back to Locations
               </Button>
-            </motion.div>
-            
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
               <Button 
-                className="px-16 py-4 bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300 text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed border-2 border-transparent"
+                className="px-12 py-3 bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg transition-all duration-300 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                 onClick={() => setStep(3)} 
                 disabled={!selectedVehicle}
               >
-                {selectedVehicle ? `Continue with ${selectedVehicle.Type} →` : 'Select a Vehicle First'}
+                Continue to Summary →
               </Button>
-            </motion.div>
-          </div>
+            </div>
+          </GlassCard>
         </div>
       )}
 
