@@ -16,6 +16,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
   const [isDriver, setIsDriver] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
   const { setAuth } = useAuthStore();
   const navigate = useNavigate();
 
@@ -37,9 +38,17 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const handleBackdropClick = () => {
+    // Don't close modal if there's an error or if loading
+    if (!hasError && !loading) {
+      onClose();
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setHasError(false);
 
     try {
       if (mode === 'signin') {
@@ -106,6 +115,9 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
       console.log('Error:', err);
       console.log('Response:', err.response?.data);
       
+      // Set error state to prevent modal from closing
+      setHasError(true);
+      
       // Extract specific error message
       let errorMessage = `Failed to ${mode === 'signin' ? 'sign in' : 'register'}. Please try again.`;
       
@@ -141,7 +153,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={onClose}
+          onClick={handleBackdropClick}
           className="absolute inset-0 bg-black/50 backdrop-blur-md"
         />
 
@@ -176,7 +188,11 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
               </button>
             </div>
 
-            <button onClick={onClose} className="ml-auto w-[30px] h-[30px] rounded-[8px] bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)] flex items-center justify-center cursor-pointer text-[rgba(245,236,216,0.55)] hover:bg-[rgba(255,255,255,0.1)] hover:text-[#F5ECD8] transition-all duration-200">
+            <button 
+              onClick={handleBackdropClick} 
+              className="ml-auto w-[30px] h-[30px] rounded-[8px] bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.08)] flex items-center justify-center cursor-pointer text-[rgba(245,236,216,0.55)] hover:bg-[rgba(255,255,255,0.1)] hover:text-[#F5ECD8] transition-all duration-200"
+              disabled={hasError || loading}
+            >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
               </svg>
@@ -208,9 +224,18 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
                 <h2 className="font-display text-[28px] text-[#E09428] text-center tracking-[-0.3px] mb-1.5">
                   {mode === 'signin' ? 'Welcome back' : 'Join RideFlow'}
                 </h2>
-                <p className="text-[13.5px] text-[rgba(245,236,216,0.55)] text-center mb-7 leading-[1.5]">
+                <p className="text-[13.5px] text-[rgba(245,236,216,0.55)] text-center mb-4 leading-[1.5]">
                   {mode === 'signin' ? 'Enter your details to access your account' : 'Create your account and start your journey'}
                 </p>
+                
+                {/* Error indicator */}
+                {hasError && (
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4">
+                    <p className="text-red-400 text-sm text-center">
+                      ⚠️ Please fix the errors below before continuing
+                    </p>
+                  </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-[14px]">
                   {mode === 'signup' && (

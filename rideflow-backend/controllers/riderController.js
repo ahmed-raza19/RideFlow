@@ -85,28 +85,92 @@ const getAvailableDrivers = asyncHandler(async (req, res) => {
 // GET /api/rider/vehicles
 const getVehicles = asyncHandler(async (req, res) => {
   const { type } = req.query;
-  let sql = `SELECT VehicleID, Make, Model, Year, Color, VehicleType, LicensePlate
-             FROM VEHICLES WHERE VerificationStatus = 'Verified'`;
+  let sql = `
+    SELECT v.VehicleID, v.Make, v.Model, v.Year, v.Color, v.VehicleType, v.LicensePlate,
+           d.DriverID, d.AvailabilityStatus, d.VerificationStatus,
+           CONCAT(u.FirstName, ' ', u.LastName) AS DriverName,
+           ROUND(AVG(r.Score), 2) AS AvgRating,
+           COUNT(r.RideID) AS TotalRides
+    FROM VEHICLES v
+    JOIN DRIVERS d ON v.DriverID = d.DriverID
+    JOIN USERS u ON d.UserID = u.UserID
+    LEFT JOIN RATINGS r ON r.RatedUserID = u.UserID
+    WHERE v.VerificationStatus = 'Verified' 
+      AND d.VerificationStatus = 'Verified'
+      AND d.AvailabilityStatus = 'Online'`;
   const params = [];
-  if (type) { sql += ' AND VehicleType = ?'; params.push(type); }
+  if (type) { sql += ' AND v.VehicleType = ?'; params.push(type); }
+  sql += ' GROUP BY v.VehicleID, d.DriverID, u.UserID';
   const [rows] = await db.query(sql, params);
-  return sendSuccess(res, rows);
+  
+  // Group by vehicle type and add availability info
+  const vehicleTypes = ['Economy', 'Business', 'Bike'];
+  const result = vehicleTypes.map(vType => {
+    const availableVehicles = rows.filter(v => v.VehicleType === vType);
+    return {
+      Type: vType,
+      Available: availableVehicles.length,
+      EstimatedFare: vType === 'Economy' ? 'PKR 100-200' : vType === 'Business' ? 'PKR 200-400' : 'PKR 50-100',
+      EstimatedTime: vType === 'Bike' ? '5-10 min' : '8-15 min',
+      Vehicles: availableVehicles.slice(0, 3) // Show top 3 available drivers
+    };
+  });
+  
+  return sendSuccess(res, result);
 });
 
 // ─── Rides ────────────────────────────────────────────────────
 
 // POST /api/rider/rides
 const requestRide = asyncHandler(async (req, res) => {
-  const { pickupLocationID, dropoffLocationID, scheduledTime } = req.body;
-  if (!pickupLocationID || !dropoffLocationID) {
-    return sendError(res, 'pickupLocationID and dropoffLocationID are required.');
+  const { pickupLocationID, dropoffLocationID, vehicleType, scheduledTime } = req.body;
+  if (!pickupLocationID || !dropoffLocationID || !vehicleType) {
+    return sendError(res, 'pickupLocationID, dropoffLocationID, and vehicleType are required.');
   }
-  const [result] = await db.query(
-    `INSERT INTO RIDES (RiderID, PickupLocationID, DropoffLocationID, RideStatus, Fare, ScheduledTime)
-     VALUES (?, ?, ?, 'Requested', 0.00, ?)`,
-    [req.user.userID, pickupLocationID, dropoffLocationID, scheduledTime || null]
+
+  // Calculate distance and fare
+  const [distanceData] = await db.query(
+    `SELECT 
+      (6371 * acos(cos(radians(pl.Latitude)) * cos(radians(dl.Latitude)) * 
+       cos(radians(dl.Longitude) - radians(pl.Longitude)) + 
+       sin(radians(pl.Latitude)) * sin(radians(dl.Latitude)))) AS Distance,
+       pl.City AS PickupCity, dl.City AS DropoffCity
+     FROM LOCATIONS pl, LOCATIONS dl 
+     WHERE pl.LocationID = ? AND dl.LocationID = ?`,
+    [pickupLocationID, dropoffLocationID]
   );
-  return sendSuccess(res, { rideID: result.insertId }, 'Ride requested', 201);
+
+  if (!distanceData.length) {
+    return sendError(res, 'Invalid pickup or dropoff location.');
+  }
+
+  const distance = distanceData[0].Distance || 5.0; // Default 5km if calculation fails
+  
+  // Base fare calculation by vehicle type
+  const baseFares = { 'Economy': 100, 'Business': 200, 'Bike': 50 };
+  const perKmRates = { 'Economy': 20, 'Business': 35, 'Bike': 15 };
+  const baseFare = baseFares[vehicleType] || 100;
+  const perKmRate = perKmRates[vehicleType] || 20;
+  const calculatedFare = baseFare + (distance * perKmRate);
+  
+  // Apply surge pricing (1.0x - 2.5x)
+  const surgeMultiplier = await calculateSurgeMultiplier(pickupLocationID, vehicleType);
+  const finalFare = Math.round(calculatedFare * surgeMultiplier * 100) / 100;
+
+  const [result] = await db.query(
+    `INSERT INTO RIDES (RiderID, PickupLocationID, DropoffLocationID, RideStatus, 
+                       Fare, Distance, ScheduledTime, SurgeMultiplier)
+     VALUES (?, ?, ?, 'Requested', ?, ?, ?, ?)`,
+    [req.user.userID, pickupLocationID, dropoffLocationID, 
+     finalFare, distance, scheduledTime || null, surgeMultiplier]
+  );
+  
+  return sendSuccess(res, { 
+    rideID: result.insertId, 
+    fare: finalFare, 
+    distance: distance,
+    surgeMultiplier: surgeMultiplier
+  }, 'Ride requested', 201);
 });
 
 // GET /api/rider/rides
@@ -283,6 +347,28 @@ const getMyComplaints = asyncHandler(async (req, res) => {
   return sendSuccess(res, rows);
 });
 
+// Helper function to calculate surge multiplier
+const calculateSurgeMultiplier = async (locationID, vehicleType) => {
+  // Check active rides in the area (within last 30 minutes)
+  const [activeRides] = await db.query(`
+    SELECT COUNT(*) as ActiveRides 
+    FROM RIDES r 
+    JOIN LOCATIONS l ON r.PickupLocationID = l.LocationID 
+    WHERE r.RideStatus IN ('Requested', 'Accepted', 'InProgress') 
+      AND r.PickupLocationID = ? 
+      AND r.StartTime > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+  `, [locationID]);
+  
+  const activeCount = activeRides[0].ActiveRides;
+  
+  // Calculate surge based on demand
+  if (activeCount >= 10) return 2.5; // Very high demand
+  if (activeCount >= 7) return 2.0;  // High demand
+  if (activeCount >= 4) return 1.5;  // Medium demand
+  if (activeCount >= 2) return 1.2;  // Low demand
+  return 1.0; // Normal pricing
+};
+
 module.exports = {
   getProfile, updateProfile, addPhone, removePhone,
   getLocations, getAvailableDrivers, getVehicles,
@@ -291,4 +377,5 @@ module.exports = {
   getActivePromoCodes, applyPromo, getMyPromoCodes,
   rateDriver,
   fileComplaint, getMyComplaints,
+  calculateSurgeMultiplier
 };
