@@ -4,11 +4,11 @@ const mysql = require('mysql2/promise');
 require('dotenv').config();
 
 const pool = mysql.createPool({
-  host:               process.env.DB_HOST     || 'localhost',
-  port:               parseInt(process.env.DB_PORT) || 3306,
-  database:           process.env.DB_NAME     || 'rideflow',
-  user:               process.env.DB_USER     || 'admin_user',
-  password:           process.env.DB_PASSWORD || '',
+  host:               process.env.MYSQL_HOST     || 'localhost',
+  port:               parseInt(process.env.MYSQL_PORT) || 3306,
+  database:           process.env.MYSQL_DATABASE || 'rideflow',
+  user:               process.env.MYSQL_USER     || 'root',
+  password:           process.env.MYSQL_PASSWORD || '',
   waitForConnections: true,
   connectionLimit:    10,
   queueLimit:         0,

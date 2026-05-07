@@ -43,7 +43,7 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
     setError('');
 
     try {
-      const API_BASE = (import.meta.env?.VITE_API_BASE) || 'http://localhost:3001/api';
+      const API_BASE = (import.meta.env?.VITE_API_BASE) || 'http://localhost:5000/api';
       
       if (mode === 'signin') {
         const response = await fetch(`${API_BASE}/auth/login`, {
