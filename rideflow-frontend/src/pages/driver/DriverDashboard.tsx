@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Radio, DollarSign, User, MapPin, Bell, Settings } from 'lucide-react';
+import { Radio, DollarSign, User, MapPin, Settings } from 'lucide-react';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { GlassCard } from '../../components/ui/GlassCard';
@@ -15,6 +15,8 @@ import { ProfileEditModal } from '../../components/driver/ProfileEditModal';
 import { VehicleForm, VehicleCard } from '../../components/driver/VehicleForm';
 import { SafetyPanel } from '../../components/driver/SafetyPanel';
 import { NotificationCenter } from '../../components/driver/NotificationCenter';
+import { ConnectionStatus } from '../../components/driver/ConnectionStatus';
+import { useWebSocket, useGeolocation } from '../../hooks/useWebSocket';
 
 export function DriverDashboard() {
   const [activeTab, setActiveTab] = useState('live');
@@ -22,6 +24,42 @@ export function DriverDashboard() {
   const [vehicleFormOpen, setVehicleFormOpen] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<any>(null);
   const [profile, setProfile] = useState<any>({});
+
+  // WebSocket integration
+  const {
+    isConnected,
+    connectionStatus,
+    lastEvent,
+    goOnline: wsGoOnline,
+    goOffline: wsGoOffline,
+    acceptRide: wsAcceptRide,
+    startRide: wsStartRide,
+    completeRide: wsCompleteRide,
+    reconnect
+  } = useWebSocket({
+    onNewRideRequest: (data) => {
+      // Handle new ride requests
+      console.log('New ride request via WebSocket:', data);
+    },
+    onRideStatusUpdate: (data) => {
+      // Handle ride status updates
+      console.log('Ride status update via WebSocket:', data);
+    },
+    onStatusUpdated: (data) => {
+      // Handle driver status updates
+      console.log('Driver status update via WebSocket:', data);
+    }
+  });
+
+  // Geolocation tracking
+  const {
+    location: currentLocation,
+    error: locationError,
+    getCurrentPosition
+  } = useGeolocation({
+    enableHighAccuracy: true,
+    timeout: 5000
+  });
 
   const navItems = [
     { id: 'live', label: 'Live', icon: <Radio size={20} /> },
@@ -46,13 +84,18 @@ export function DriverDashboard() {
     <DashboardLayout>
       <Sidebar items={navItems} activeId={activeTab} onSelect={setActiveTab} title="Driver" />
       <main className="flex-1 lg:ml-64 p-4 md:p-8 pb-24 lg:pb-8 w-full max-w-[1200px] mx-auto">
-        {/* Header with Notifications */}
+        {/* Header with Notifications and Connection Status */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-display text-white mb-2">Driver Dashboard</h1>
             <p className="text-text-muted">Manage your rides and earnings</p>
           </div>
           <div className="flex items-center gap-3">
+            <ConnectionStatus 
+              isConnected={isConnected} 
+              connectionStatus={connectionStatus}
+              onReconnect={reconnect}
+            />
             <NotificationCenter />
             <Button variant="glass" onClick={() => setProfileEditOpen(true)}>
               <Settings size={20} className="mr-2" />
@@ -60,6 +103,36 @@ export function DriverDashboard() {
             </Button>
           </div>
         </div>
+
+        {/* Connection Status Panel (when disconnected) */}
+        {connectionStatus !== 'connected' && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6"
+          >
+            <GlassCard tier={1} className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-3 h-3 bg-amber-500 rounded-full animate-pulse" />
+                  <div>
+                    <h3 className="text-white font-medium">Real-time Features Limited</h3>
+                    <p className="text-sm text-text-muted">
+                      {connectionStatus === 'connecting' 
+                        ? 'Establishing connection...'
+                        : 'Real-time updates are unavailable. Some features may be delayed.'}
+                    </p>
+                  </div>
+                </div>
+                {connectionStatus === 'disconnected' && (
+                  <Button variant="neon" size="sm" onClick={reconnect}>
+                    Reconnect
+                  </Button>
+                )}
+              </div>
+            </GlassCard>
+          </motion.div>
+        )}
 
         <AnimatePresence mode="wait">
           <motion.div
@@ -74,6 +147,14 @@ export function DriverDashboard() {
               <LiveTab 
                 profile={profile} 
                 onProfileUpdate={fetchProfile}
+                isConnected={isConnected}
+                wsGoOnline={wsGoOnline}
+                wsGoOffline={wsGoOffline}
+                wsAcceptRide={wsAcceptRide}
+                wsStartRide={wsStartRide}
+                wsCompleteRide={wsCompleteRide}
+                currentLocation={currentLocation}
+                getCurrentPosition={getCurrentPosition}
               />
             )}
             {activeTab === 'earnings' && <EarningsTab />}
@@ -113,7 +194,29 @@ export function DriverDashboard() {
   );
 }
 
-function LiveTab({ profile, onProfileUpdate }: { profile: any; onProfileUpdate: () => void }) {
+function LiveTab({ 
+  profile, 
+  onProfileUpdate, 
+  isConnected,
+  wsGoOnline,
+  wsGoOffline,
+  wsAcceptRide,
+  wsStartRide,
+  wsCompleteRide,
+  currentLocation,
+  getCurrentPosition
+}: { 
+  profile: any; 
+  onProfileUpdate: () => void;
+  isConnected: boolean;
+  wsGoOnline: (locationID?: number, vehicleID?: number) => void;
+  wsGoOffline: () => void;
+  wsAcceptRide: (rideId: number, vehicleID: number) => void;
+  wsStartRide: (rideId: number) => void;
+  wsCompleteRide: (rideId: number) => void;
+  currentLocation: { latitude: number; longitude: number } | null;
+  getCurrentPosition: () => Promise<{ latitude: number; longitude: number }>;
+}) {
   const [isOnline, setIsOnline] = useState(false);
   const [incomingRide, setIncomingRide] = useState<any>(null);
   const [activeRide, setActiveRide] = useState<any>(null);
@@ -160,10 +263,27 @@ function LiveTab({ profile, onProfileUpdate }: { profile: any; onProfileUpdate: 
 
   const toggleOnline = async (checked: boolean) => {
     try {
-      await driverAPI.setAvailability(checked ? 'Online' : 'Offline');
-      setIsOnline(checked);
-      if (checked) toast.info("You're online. Waiting for rides...");
-      else setIncomingRide(null);
+      if (checked) {
+        // Get current location before going online
+        const location = currentLocation || await getCurrentPosition();
+        
+        // Use WebSocket to go online
+        wsGoOnline();
+        
+        // Also update via API for consistency
+        await driverAPI.setAvailability('Online');
+        setIsOnline(checked);
+        toast.info("You're online. Waiting for rides...");
+      } else {
+        // Use WebSocket to go offline
+        wsGoOffline();
+        
+        // Also update via API for consistency
+        await driverAPI.setAvailability('Offline');
+        setIsOnline(checked);
+        setIncomingRide(null);
+        toast.info("You're now offline");
+      }
     } catch (err) {
       toast.error('Failed to change status');
     }
@@ -173,7 +293,13 @@ function LiveTab({ profile, onProfileUpdate }: { profile: any; onProfileUpdate: 
     try {
       const v = vehicles.find(v => v.VerificationStatus === 'Verified');
       if (!v) return toast.error('You need a verified vehicle to accept rides');
+      
+      // Use WebSocket for real-time acceptance
+      wsAcceptRide(incomingRide.RideID, v.VehicleID);
+      
+      // Also update via API for consistency
       await driverAPI.acceptRide(incomingRide.RideID, v.VehicleID);
+      
       const res = await driverAPI.getMyRides();
       setActiveRide(res.data.data.find((r: any) => r.RideID === incomingRide.RideID));
       setIncomingRide(null);
@@ -186,15 +312,27 @@ function LiveTab({ profile, onProfileUpdate }: { profile: any; onProfileUpdate: 
 
   const handleStart = async () => {
     try {
+      // Use WebSocket for real-time start
+      wsStartRide(activeRide.RideID);
+      
+      // Also update via API for consistency
       await driverAPI.startRide(activeRide.RideID);
+      
       setActiveRide({ ...activeRide, RideStatus: 'InProgress' });
       toast.success('Ride started');
-    } catch (err) { toast.error('Failed to start'); }
+    } catch (err) { 
+      toast.error('Failed to start'); 
+    }
   }
 
   const handleComplete = async () => {
     try {
+      // Use WebSocket for real-time completion
+      wsCompleteRide(activeRide.RideID);
+      
+      // Also update via API for consistency
       await driverAPI.completeRide(activeRide.RideID);
+      
       setActiveRide(null);
       toast.success('Ride completed! Earnings added to wallet.');
     } catch (err) {
