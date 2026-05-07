@@ -89,7 +89,27 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         navigate(`/${role.toLowerCase()}`);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to register. Please try again.');
+      console.log('=== SIGNUP ERROR ===');
+      console.log('Error:', err);
+      console.log('Response:', err.response?.data);
+      
+      // Extract specific error message
+      let errorMessage = 'Failed to register. Please try again.';
+      
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.status === 409) {
+        errorMessage = 'Email already registered. Please use a different email or sign in.';
+      } else if (err.response?.status === 400) {
+        errorMessage = 'Invalid information provided. Please check all fields and try again.';
+      } else if (err.code === 'ERR_NETWORK') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
+      console.log('Displaying error:', errorMessage);
+      toast.error(errorMessage);
+      
+      // Don't call onSuccess() on error - keep user on the form
     } finally {
       setLoading(false);
     }

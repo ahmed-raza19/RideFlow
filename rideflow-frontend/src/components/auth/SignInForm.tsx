@@ -37,11 +37,31 @@ export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
         setAuth(res.data.data.token, res.data.data.user);
         toast.success('Successfully signed in!');
         onSuccess();
-        const role = res.data.data.user.role.toLowerCase();
-        navigate(`/${role}`);
+        const role = res.data.data.user.role;
+        navigate(`/${role.toLowerCase()}`);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to sign in. Please try again.');
+      console.log('=== SIGNIN ERROR ===');
+      console.log('Error:', err);
+      console.log('Response:', err.response?.data);
+      
+      // Extract specific error message
+      let errorMessage = 'Failed to sign in. Please try again.';
+      
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (err.response?.status === 400) {
+        errorMessage = 'Invalid information provided. Please check all fields and try again.';
+      } else if (err.code === 'ERR_NETWORK') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
+      console.log('Displaying error:', errorMessage);
+      toast.error(errorMessage);
+      
+      // Don't call onSuccess() on error - keep user on the form
     } finally {
       setLoading(false);
     }

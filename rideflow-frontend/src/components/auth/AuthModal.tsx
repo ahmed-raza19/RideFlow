@@ -45,13 +45,35 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
       if (mode === 'signin') {
         const res = await authAPI.login(formData.email, formData.password);
         if (res.data.success) {
-          console.log('Auth Success:', res.data.data);
+          console.log('=== AUTH SUCCESS ===');
+          console.log('Response data:', res.data.data);
+          const userRole = res.data.data.user.role;
+          console.log('User role from backend:', userRole);
+          console.log('Token:', res.data.data.token.substring(0, 50) + '...');
+          
+          // Set auth state
           setAuth(res.data.data.token, res.data.data.user);
+          console.log('Auth state set in store');
+          
+          // Check if auth was actually set
+          setTimeout(() => {
+            console.log('Checking auth state after set...');
+            const authState = useAuthStore.getState();
+            console.log('Token in store:', !!authState.token);
+            console.log('User in store:', authState.user);
+            console.log('User role in store:', authState.user?.role);
+          }, 100);
+          
           toast.success('Successfully signed in!');
-          onClose();
-          const role = res.data.data.user.role.toLowerCase();
+          const role = userRole.toLowerCase();
           console.log('Navigating to:', `/${role}`);
+          
+          // Navigate
           navigate(`/${role}`);
+          console.log('Navigation called');
+          
+          // Close modal after navigation starts
+          setTimeout(() => onClose(), 100);
         }
       } else {
         const role = isDriver ? 'Driver' : 'Rider';
@@ -70,14 +92,40 @@ export function AuthModal({ isOpen, onClose, mode: initialMode = 'signin' }: Aut
 
         const res = await authAPI.register(payload);
         if (res.data.success) {
+          console.log('Registration Success:', res.data.data);
           toast.success('Account created successfully!');
           setAuth(res.data.data.token, res.data.data.user);
-          onClose();
+          console.log('Navigating to:', `/${role.toLowerCase()}`);
           navigate(`/${role.toLowerCase()}`);
+          // Close modal after navigation starts
+          setTimeout(() => onClose(), 100);
         }
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.error || `Failed to ${mode === 'signin' ? 'sign in' : 'register'}. Please try again.`);
+      console.log('=== AUTH ERROR ===');
+      console.log('Error:', err);
+      console.log('Response:', err.response?.data);
+      
+      // Extract specific error message
+      let errorMessage = `Failed to ${mode === 'signin' ? 'sign in' : 'register'}. Please try again.`;
+      
+      if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.response?.status === 401) {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (err.response?.status === 409) {
+        errorMessage = 'Email already registered. Please use a different email or sign in.';
+      } else if (err.response?.status === 400) {
+        errorMessage = 'Invalid information provided. Please check all fields and try again.';
+      } else if (err.code === 'ERR_NETWORK') {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      }
+      
+      console.log('Displaying error:', errorMessage);
+      toast.error(errorMessage);
+      
+      // Keep modal open on error - don't close it
+      // Modal stays open so user can try again
     } finally {
       setLoading(false);
     }

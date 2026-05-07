@@ -10,18 +10,30 @@ function ProtectedRoute({ role, children }: { role?: string, children: React.Rea
   const token = useAuthStore(state => state.token);
   const user = useAuthStore(state => state.user);
 
-  console.log('ProtectedRoute:', { path: window.location.pathname, role, userRole: user?.role, hasToken: !!token });
+  console.log('=== PROTECTED ROUTE CHECK ===');
+  console.log('Current path:', window.location.pathname);
+  console.log('Expected role:', role);
+  console.log('Token exists:', !!token);
+  console.log('User data:', user);
+  console.log('User role:', user?.role);
+  console.log('Role comparison:', {
+    expected: role?.toLowerCase(),
+    actual: user?.role?.toLowerCase(),
+    match: role?.toLowerCase() === user?.role?.toLowerCase()
+  });
 
   if (!token) {
-    console.log('No token, redirecting to /');
+    console.log('❌ No token found, redirecting to /');
     return <Navigate to="/" replace />;
   }
 
-  if (role && user?.role !== role) {
-    console.log('Role mismatch, redirecting to /', { expected: role, actual: user?.role });
+  if (role && user?.role?.toLowerCase() !== role.toLowerCase()) {
+    console.log('❌ Role mismatch, redirecting to /');
+    console.log('Expected:', role, 'Got:', user?.role);
     return <Navigate to="/" replace />;
   }
 
+  console.log('✅ Authentication passed, rendering protected content');
   return <>{children}</>;
 }
 
