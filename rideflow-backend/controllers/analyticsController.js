@@ -144,7 +144,7 @@ const getPerformanceMetrics = asyncHandler(async (req, res) => {
       
       -- Rating metrics
       AVG(rating.AverageRating) as AverageRating,
-      COUNT(DISTINCT rating.RatedBy) as UniqueRaters,
+      rating.UniqueRaters,
       
       -- Efficiency metrics
       (SUM(CASE WHEN r.RideStatus = 'Completed' THEN r.Distance ELSE NULL END) / 
@@ -157,7 +157,8 @@ const getPerformanceMetrics = asyncHandler(async (req, res) => {
       SELECT 
         RatedUserID,
         AVG(Score) as AverageRating,
-        COUNT(*) as RatingCount
+        COUNT(*) as RatingCount,
+        COUNT(DISTINCT RatedBy) as UniqueRaters
       FROM RATINGS 
       GROUP BY RatedUserID
     ) rating ON r.DriverID = rating.RatedUserID

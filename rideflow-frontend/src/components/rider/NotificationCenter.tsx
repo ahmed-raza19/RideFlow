@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, CheckCircle, AlertCircle, DollarSign, Shield, User } from 'lucide-react';
+import { Bell, X, CheckCircle, AlertCircle, DollarSign, Shield, Car, Info } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { GlassCard } from '../ui/GlassCard';
-import { driverAPI } from '../../lib/driver';
+import { riderAPI } from '../../lib/rider';
 import { fadeSlideUp } from '../../motion/presets';
 
 interface Notification {
   NotificationID: number;
   Title: string;
   Message: string;
-  Type: 'Ride' | 'Payment' | 'Verification' | 'Safety' | 'System';
+  NotificationType: 'RideUpdate' | 'Payment' | 'Promo' | 'Safety' | 'System' | 'Ride' | 'Verification';
   IsRead: boolean;
   CreatedAt: string;
   RelatedID?: number;
+  ActionURL?: string;
 }
 
 interface NotificationCenterProps {
@@ -30,7 +31,7 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const response = await driverAPI.getNotifications();
+      const response = await riderAPI.getNotifications();
       const data = response.data?.data || [];
       setNotifications(data);
       setUnreadCount(data.filter((n: Notification) => !n.IsRead).length);
@@ -50,7 +51,7 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
 
   const markAsRead = async (notificationId: number) => {
     try {
-      await driverAPI.markNotificationRead(notificationId);
+      await riderAPI.markNotificationsRead([notificationId]);
       setNotifications(prev => 
         prev.map(n => n.NotificationID === notificationId ? { ...n, IsRead: true } : n)
       );
@@ -61,22 +62,43 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
   };
 
   const markAllAsRead = async () => {
-    const unreadNotifications = notifications.filter(n => !n.IsRead);
-    for (const notification of unreadNotifications) {
-      await markAsRead(notification.NotificationID);
+    try {
+      await riderAPI.markAllNotificationsRead();
+      setNotifications(prev => prev.map(n => ({ ...n, IsRead: true })));
+      setUnreadCount(0);
+    } catch (error: any) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+
+  const deleteNotification = async (notificationId: number) => {
+    try {
+      await riderAPI.deleteNotification(notificationId);
+      setNotifications(prev => prev.filter(n => n.NotificationID !== notificationId));
+      const deleted = notifications.find(n => n.NotificationID === notificationId);
+      if (deleted && !deleted.IsRead) {
+        setUnreadCount(prev => Math.max(0, prev - 1));
+      }
+    } catch (error: any) {
+      console.error('Failed to delete notification:', error);
     }
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'Ride':
-        return <User size={16} className="text-blue-500" />;
+      case 'RideUpdate':
+        return <Car size={16} className="text-blue-500" />;
       case 'Payment':
         return <DollarSign size={16} className="text-green-500" />;
+      case 'Promo':
+        return <CheckCircle size={16} className="text-purple-500" />;
       case 'Verification':
         return <CheckCircle size={16} className="text-amber-500" />;
       case 'Safety':
         return <Shield size={16} className="text-red-500" />;
+      case 'System':
+        return <Info size={16} className="text-gray-500" />;
       default:
         return <AlertCircle size={16} className="text-gray-500" />;
     }
@@ -103,8 +125,8 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
         <Bell size={20} className="text-white" />
         {unreadCount > 0 && (
           <Badge 
-            variant="neon" 
-            className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs p-0"
+            variant="error" 
+            className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs p-0 rounded-full"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </Badge>
@@ -169,7 +191,7 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 mt-1">
-                            {getNotificationIcon(notification.Type)}
+                            {getNotificationIcon(notification.NotificationType)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
@@ -189,14 +211,22 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
                               <span className="text-xs text-text-muted">
                                 {formatTime(notification.CreatedAt)}
                               </span>
-                              {!notification.IsRead && (
-                                <Button variant="glass" size="sm" onClick={(e) => {
+                              <div className="flex items-center gap-2">
+                                {!notification.IsRead && (
+                                  <Button variant="glass" size="sm" onClick={(e) => {
+                                    e.stopPropagation();
+                                    markAsRead(notification.NotificationID);
+                                  }}>
+                                    Mark read
+                                  </Button>
+                                )}
+                                <Button variant="icon" className="w-6 h-6" onClick={(e) => {
                                   e.stopPropagation();
-                                  markAsRead(notification.NotificationID);
+                                  deleteNotification(notification.NotificationID);
                                 }}>
-                                  Mark read
+                                  <X size={14} />
                                 </Button>
-                              )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -223,13 +253,18 @@ export function NotificationCard({ notification, onRead }: NotificationCardProps
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'Ride':
-        return <User size={20} className="text-blue-500" />;
+      case 'RideUpdate':
+        return <Car size={20} className="text-blue-500" />;
       case 'Payment':
         return <DollarSign size={20} className="text-green-500" />;
+      case 'Promo':
+        return <CheckCircle size={20} className="text-purple-500" />;
       case 'Verification':
         return <CheckCircle size={20} className="text-amber-500" />;
       case 'Safety':
         return <Shield size={20} className="text-red-500" />;
+      case 'System':
+        return <Info size={20} className="text-gray-500" />;
       default:
         return <AlertCircle size={20} className="text-gray-500" />;
     }
@@ -250,7 +285,7 @@ export function NotificationCard({ notification, onRead }: NotificationCardProps
     <GlassCard tier={1} className="p-4">
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0">
-          {getNotificationIcon(notification.Type)}
+          {getNotificationIcon(notification.NotificationType)}
         </div>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-2">

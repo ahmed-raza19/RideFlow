@@ -377,7 +377,7 @@ const handleDisconnection = (socket) => {
 // Helper functions to emit events from other parts of the application
 const emitToUser = (userId, event, data) => {
   if (io) {
-    io.to(`user_${userId}`).emit(event, data);
+    io.to(`customer_${userId}`).emit(event, data);
   }
 };
 

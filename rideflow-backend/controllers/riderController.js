@@ -5,6 +5,7 @@ const db = require('../config/db');
 const { asyncHandler, sendSuccess, sendError } = require('../utils/helpers');
 const wsServer = require('../utils/websocket');
 const { createNotification } = require('./notificationController');
+const { emitToLocation, emitToUser } = require('../config/socket');
 
 // ─── Profile ──────────────────────────────────────────────────
 
@@ -167,8 +168,49 @@ const requestRide = asyncHandler(async (req, res) => {
      finalFare, distance, scheduledTime || null, surgeMultiplier]
   );
 
-  // Broadcast ride update via WebSocket
-  wsServer.broadcastRideUpdate(result.insertId, req.user.userID, {
+  const rideId = result.insertId;
+
+  // Get ride details for broadcasting to drivers
+  const [rideDetails] = await db.query(
+    `SELECT r.*, CONCAT(u.FirstName,' ',u.LastName) AS CustomerName,
+            pl.City AS PickupCity, pl.Street AS PickupStreet,
+            dl.City AS DropoffCity, dl.Street AS DropoffStreet
+     FROM RIDES r
+     JOIN USERS u ON r.CustomerID = u.UserID
+     JOIN LOCATIONS pl ON r.PickupLocationID = pl.LocationID
+     JOIN LOCATIONS dl ON r.DropoffLocationID = dl.LocationID
+     WHERE r.RideID = ?`,
+    [rideId]
+  );
+
+  if (rideDetails.length > 0) {
+    const ride = rideDetails[0];
+    
+    // Emit real-time event to online drivers in the pickup location
+    emitToLocation(pickupLocationID, 'new_ride_request', {
+      rideId: ride.RideID,
+      customerName: ride.CustomerName,
+      pickupCity: ride.PickupCity,
+      pickupStreet: ride.PickupStreet,
+      dropoffCity: ride.DropoffCity,
+      dropoffStreet: ride.DropoffStreet,
+      fare: ride.Fare,
+      distance: ride.Distance,
+      vehicleType: vehicleType,
+      surgeMultiplier: ride.SurgeMultiplier,
+      timestamp: new Date()
+    });
+
+    // Also emit to specific customer
+    emitToUser(req.user.userID, 'ride_request_created', {
+      rideId: ride.RideID,
+      status: 'Requested',
+      message: 'Your ride request has been submitted to drivers'
+    });
+  }
+
+  // Broadcast ride update via WebSocket (for rider UI)
+  wsServer.broadcastRideUpdate(rideId, req.user.userID, {
     status: 'Requested',
     message: 'Finding your driver...',
     fare: finalFare,
@@ -182,11 +224,11 @@ const requestRide = asyncHandler(async (req, res) => {
     'Ride Requested',
     `Your ${vehicleType} ride has been requested. We're finding you a driver.`,
     'RideUpdate',
-    `/customer?ride=${result.insertId}`
+    `/customer?ride=${rideId}`
   ).catch(err => console.error('Failed to create notification:', err));
   
   return sendSuccess(res, { 
-    rideID: result.insertId, 
+    rideID: rideId, 
     fare: finalFare, 
     distance: distance,
     surgeMultiplier: surgeMultiplier

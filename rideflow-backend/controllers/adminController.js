@@ -291,7 +291,7 @@ const getAllRides = asyncHandler(async (req, res) => {
     SELECT r.*, 
            CONCAT(ru.FirstName,' ',ru.LastName) AS RiderName,
            CONCAT(du.FirstName,' ',du.LastName) AS DriverName,
-           pu.City AS PickupCity, du.City AS DropoffCity,
+           pu.City AS PickupCity, du_loc.City AS DropoffCity,
            v.Make, v.Model, v.LicensePlate
     FROM RIDES r
     JOIN USERS ru ON r.CustomerID = ru.UserID

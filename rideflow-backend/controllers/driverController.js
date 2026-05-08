@@ -289,7 +289,7 @@ const acceptRide = asyncHandler(async (req, res) => {
 
     // Create notification for customer
     await db.query(
-      `INSERT INTO NOTIFICATIONS (UserID, Title, Message, Type, RelatedID)
+      `INSERT INTO NOTIFICATIONS (UserID, Title, Message, NotificationType, RelatedID)
        VALUES (?, 'Ride Accepted', 'Your driver is on the way!', 'Ride', ?)`,
       [ride.CustomerID, ride.RideID]
     );
@@ -499,7 +499,7 @@ const getNotifications = asyncHandler(async (req, res) => {
     'SELECT DriverID FROM DRIVERS WHERE UserID = ?', [req.user.userID]);
   
   const [rows] = await db.query(
-    `SELECT NotificationID, Title, Message, Type, IsRead, CreatedAt
+    `SELECT NotificationID, Title, Message, NotificationType, IsRead, CreatedAt
      FROM NOTIFICATIONS 
      WHERE UserID = ? 
      ORDER BY CreatedAt DESC 

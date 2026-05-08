@@ -12,6 +12,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { toast } from '../../components/ui/Toast';
 import { riderAPI } from '../../lib/rider';
 import { fadeSlideUp } from '../../motion/presets';
+import { NotificationCenter } from '../../components/rider/NotificationCenter';
 
 export function RiderDashboard() {
   const [activeTab, setActiveTab] = useState('book');
@@ -26,6 +27,14 @@ export function RiderDashboard() {
     <DashboardLayout>
       <Sidebar items={navItems} activeId={activeTab} onSelect={setActiveTab} title="Rider" />
       <main className="flex-1 lg:ml-64 p-4 md:p-8 pb-24 lg:pb-8 w-full max-w-[1200px] mx-auto">
+        {/* Header with Notifications */}
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-display text-white mb-2">Rider Dashboard</h1>
+            <p className="text-text-muted">Book rides and manage your trips</p>
+          </div>
+          <NotificationCenter />
+        </div>
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}

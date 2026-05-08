@@ -14,6 +14,7 @@ import { toast } from '../../components/ui/Toast';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { MagneticButton } from '../../components/ui/MagneticButton';
 import { CreateUserModal } from '../../components/admin/CreateUserModal';
+import { NotificationCenter } from '../../components/admin/NotificationCenter';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -53,6 +54,14 @@ export function AdminDashboard() {
       <DashboardLayout>
         <Sidebar items={navItems} activeId={activeTab} onSelect={setActiveTab} title="Admin Portal" />
         <main className="flex-1 lg:ml-64 p-4 md:p-8 pb-24 lg:pb-8 w-full max-w-[1400px] mx-auto relative z-10">
+          {/* Header with Notifications */}
+          <div className="flex justify-between items-center mb-6">
+            <div>
+              <h1 className="text-3xl font-display text-amber-900 mb-2">Admin Dashboard</h1>
+              <p className="text-amber-700/70">Manage platform operations</p>
+            </div>
+            <NotificationCenter />
+          </div>
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}

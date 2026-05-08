@@ -1,5 +1,6 @@
 // server.js — RideFlow REST API entry point
-require('dotenv').config();
+require('dotenv').config({ path: __dirname + '/../.env' });
+console.log('JWT_SECRET loaded:', process.env.JWT_SECRET ? 'YES' : 'NO');
 const express = require('express');
 const cors    = require('cors');
 const http    = require('http');
@@ -25,7 +26,6 @@ app.get('/health', (_req, res) =>
 // ─── Routes ───────────────────────────────────────────────────
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
-const customerRoutes = require('./routes/customer');
 const driverRoutes = require('./routes/driver');
 const riderRoutes = require('./routes/rider');
 const notificationRoutes = require('./routes/notifications');
@@ -33,7 +33,6 @@ const notificationRoutes = require('./routes/notifications');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/customer', customerRoutes);
 app.use('/api/driver', driverRoutes);
 app.use('/api/rider', riderRoutes);
 app.use('/api/rider/notifications', notificationRoutes);

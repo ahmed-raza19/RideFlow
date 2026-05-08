@@ -36,9 +36,8 @@ const requireRole = (...roles) => (req, res, next) => {
 };
 
 const requireAdmin   = requireRole('Admin');
-const requireCustomer = requireRole('Rider'); // Fixed: Customer role should map to Rider in database
 const requireRider   = requireRole('Rider');
 const requireDriver  = requireRole('Driver');
-const requireAny     = requireRole('Admin', 'Rider', 'Driver'); // Fixed: Changed Customer to Rider
+const requireAny     = requireRole('Admin', 'Rider', 'Driver');
 
-module.exports = { authenticate, requireAdmin, requireCustomer, requireRider, requireDriver, requireAny };
+module.exports = { authenticate, requireAdmin, requireRider, requireDriver, requireAny };

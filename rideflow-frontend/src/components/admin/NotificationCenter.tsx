@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, CheckCircle, AlertCircle, DollarSign, Shield, User } from 'lucide-react';
+import { Bell, X, CheckCircle, AlertCircle, DollarSign, Shield, Car, Info, Tag } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 import { GlassCard } from '../ui/GlassCard';
-import { driverAPI } from '../../lib/driver';
+import { adminAPI } from '../../lib/admin';
 import { fadeSlideUp } from '../../motion/presets';
 
 interface Notification {
   NotificationID: number;
   Title: string;
   Message: string;
-  Type: 'Ride' | 'Payment' | 'Verification' | 'Safety' | 'System';
+  NotificationType: 'RideUpdate' | 'Payment' | 'Promo' | 'Safety' | 'System' | 'Ride' | 'Verification';
   IsRead: boolean;
   CreatedAt: string;
   RelatedID?: number;
+  ActionURL?: string;
 }
 
 interface NotificationCenterProps {
@@ -30,7 +31,7 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const response = await driverAPI.getNotifications();
+      const response = await adminAPI.getNotifications();
       const data = response.data?.data || [];
       setNotifications(data);
       setUnreadCount(data.filter((n: Notification) => !n.IsRead).length);
@@ -49,34 +50,33 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
   }, []);
 
   const markAsRead = async (notificationId: number) => {
-    try {
-      await driverAPI.markNotificationRead(notificationId);
-      setNotifications(prev => 
-        prev.map(n => n.NotificationID === notificationId ? { ...n, IsRead: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error: any) {
-      console.error('Failed to mark notification as read:', error);
-    }
+    // Admin API doesn't have mark read endpoint, just update local state
+    setNotifications(prev => 
+      prev.map(n => n.NotificationID === notificationId ? { ...n, IsRead: true } : n)
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
   const markAllAsRead = async () => {
-    const unreadNotifications = notifications.filter(n => !n.IsRead);
-    for (const notification of unreadNotifications) {
-      await markAsRead(notification.NotificationID);
-    }
+    setNotifications(prev => prev.map(n => ({ ...n, IsRead: true })));
+    setUnreadCount(0);
   };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'Ride':
-        return <User size={16} className="text-blue-500" />;
+      case 'RideUpdate':
+        return <Car size={16} className="text-blue-500" />;
       case 'Payment':
         return <DollarSign size={16} className="text-green-500" />;
+      case 'Promo':
+        return <Tag size={16} className="text-purple-500" />;
       case 'Verification':
         return <CheckCircle size={16} className="text-amber-500" />;
       case 'Safety':
         return <Shield size={16} className="text-red-500" />;
+      case 'System':
+        return <Info size={16} className="text-gray-500" />;
       default:
         return <AlertCircle size={16} className="text-gray-500" />;
     }
@@ -98,13 +98,13 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
       {/* Notification Bell */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 rounded-lg hover:bg-white/10 transition-colors"
+        className="relative p-2 rounded-lg hover:bg-amber-500/10 transition-colors"
       >
-        <Bell size={20} className="text-white" />
+        <Bell size={20} className="text-amber-700" />
         {unreadCount > 0 && (
           <Badge 
-            variant="neon" 
-            className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs p-0"
+            variant="error" 
+            className="absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center text-xs p-0 rounded-full"
           >
             {unreadCount > 9 ? '9+' : unreadCount}
           </Badge>
@@ -127,11 +127,11 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
               initial="initial"
               animate="animate"
               exit="exit"
-              className="absolute right-0 top-full mt-2 w-96 max-h-[500px] bg-bg-surface border border-glass-border rounded-lg shadow-xl z-20 overflow-hidden"
+              className="absolute right-0 top-full mt-2 w-96 max-h-[500px] bg-white border border-champagne rounded-lg shadow-xl z-20 overflow-hidden"
             >
               {/* Header */}
-              <div className="flex items-center justify-between p-4 border-b border-glass-border">
-                <h3 className="text-lg font-display text-white">Notifications</h3>
+              <div className="flex items-center justify-between p-4 border-b border-champagne/30">
+                <h3 className="text-lg font-display text-amber-900">Notifications</h3>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
                     <Button variant="glass" size="sm" onClick={markAllAsRead}>
@@ -147,34 +147,34 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
               {/* Notifications List */}
               <div className="overflow-y-auto max-h-[400px]">
                 {loading ? (
-                  <div className="p-8 text-center text-text-muted">
+                  <div className="p-8 text-center text-amber-700/70">
                     Loading notifications...
                   </div>
                 ) : notifications.length === 0 ? (
-                  <div className="p-8 text-center text-text-muted">
+                  <div className="p-8 text-center text-amber-700/70">
                     <Bell size={48} className="mx-auto mb-4 opacity-50" />
                     <p>No notifications yet</p>
                   </div>
                 ) : (
-                  <div className="divide-y divide-glass-border">
+                  <div className="divide-y divide-champagne/20">
                     {notifications.map((notification) => (
                       <motion.div
                         key={notification.NotificationID}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
-                        className={`p-4 hover:bg-glass-bg-light cursor-pointer transition-colors ${
-                          !notification.IsRead ? 'bg-amber-500/5' : ''
+                        className={`p-4 hover:bg-amber-50 cursor-pointer transition-colors ${
+                          !notification.IsRead ? 'bg-amber-100/50' : ''
                         }`}
                         onClick={() => !notification.IsRead && markAsRead(notification.NotificationID)}
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 mt-1">
-                            {getNotificationIcon(notification.Type)}
+                            {getNotificationIcon(notification.NotificationType)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <h4 className={`text-sm font-medium ${
-                                !notification.IsRead ? 'text-white' : 'text-text-secondary'
+                                !notification.IsRead ? 'text-amber-900' : 'text-amber-700'
                               }`}>
                                 {notification.Title}
                               </h4>
@@ -182,11 +182,11 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
                                 <div className="w-2 h-2 bg-amber-500 rounded-full flex-shrink-0 mt-2" />
                               )}
                             </div>
-                            <p className="text-sm text-text-muted mt-1 line-clamp-2">
+                            <p className="text-sm text-amber-800/70 mt-1 line-clamp-2">
                               {notification.Message}
                             </p>
                             <div className="flex items-center justify-between mt-2">
-                              <span className="text-xs text-text-muted">
+                              <span className="text-xs text-amber-700/60">
                                 {formatTime(notification.CreatedAt)}
                               </span>
                               {!notification.IsRead && (
@@ -223,13 +223,18 @@ export function NotificationCard({ notification, onRead }: NotificationCardProps
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'Ride':
-        return <User size={20} className="text-blue-500" />;
+      case 'RideUpdate':
+        return <Car size={20} className="text-blue-500" />;
       case 'Payment':
         return <DollarSign size={20} className="text-green-500" />;
+      case 'Promo':
+        return <Tag size={20} className="text-purple-500" />;
       case 'Verification':
         return <CheckCircle size={20} className="text-amber-500" />;
       case 'Safety':
         return <Shield size={20} className="text-red-500" />;
+      case 'System':
+        return <Info size={20} className="text-gray-500" />;
       default:
         return <AlertCircle size={20} className="text-gray-500" />;
     }
@@ -250,12 +255,12 @@ export function NotificationCard({ notification, onRead }: NotificationCardProps
     <GlassCard tier={1} className="p-4">
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0">
-          {getNotificationIcon(notification.Type)}
+          {getNotificationIcon(notification.NotificationType)}
         </div>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-2">
             <h4 className={`font-medium ${
-              !notification.IsRead ? 'text-white' : 'text-text-secondary'
+              !notification.IsRead ? 'text-amber-900' : 'text-amber-700'
             }`}>
               {notification.Title}
             </h4>
@@ -263,11 +268,11 @@ export function NotificationCard({ notification, onRead }: NotificationCardProps
               <div className="w-3 h-3 bg-amber-500 rounded-full" />
             )}
           </div>
-          <p className="text-sm text-text-muted mt-1">
+          <p className="text-sm text-amber-800/70 mt-1">
             {notification.Message}
           </p>
           <div className="flex items-center justify-between mt-3">
-            <span className="text-xs text-text-muted">
+            <span className="text-xs text-amber-700/60">
               {formatTime(notification.CreatedAt)}
             </span>
             {!notification.IsRead && onRead && (
