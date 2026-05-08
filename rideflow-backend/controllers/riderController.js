@@ -58,11 +58,27 @@ const removePhone = asyncHandler(async (req, res) => {
 
 // GET /api/rider/locations
 const getLocations = asyncHandler(async (req, res) => {
-  const { city } = req.query;
+  const { city, search, limit = 20 } = req.query;
   let sql = 'SELECT * FROM LOCATIONS WHERE 1=1';
   const params = [];
-  if (city) { sql += ' AND City = ?'; params.push(city); }
+  
+  if (city) { 
+    sql += ' AND City = ?'; 
+    params.push(city); 
+  }
+  
+  if (search) {
+    sql += ' AND (LocationName LIKE ? OR City LIKE ? OR Street LIKE ?)';
+    const searchTerm = `%${search}%`;
+    params.push(searchTerm, searchTerm, searchTerm);
+  }
+  
   sql += ' ORDER BY City, LocationName';
+  if (limit) {
+    sql += ' LIMIT ?';
+    params.push(parseInt(limit));
+  }
+  
   const [rows] = await db.query(sql, params);
   return sendSuccess(res, rows);
 });

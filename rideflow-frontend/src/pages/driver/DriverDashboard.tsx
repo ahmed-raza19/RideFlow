@@ -6,27 +6,22 @@ import {
   DollarSign, 
   Star, 
   Activity, 
-  Clock, 
-  MapPin, 
-  User, 
-  Settings,
-  Bell
+  User
 } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
-import { Line } from 'react-chartjs-2';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
 import { Sidebar } from '../../components/layout/Sidebar';
 import { GlassCard } from '../../components/ui/GlassCard';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { StatCard } from '../../components/ui/StatCard';
-import { FormInput } from '../../components/ui/FormInput';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { toast } from '../../components/ui/Toast';
 import { driverAPI } from '../../lib/driver';
 import { fadeSlideUp } from '../../motion/presets';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import { DriverRatingModal } from '../../components/driver/DriverRatingModal';
+import { NotificationCenter } from '../../components/driver/NotificationCenter';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -78,7 +73,6 @@ export function DriverDashboard() {
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={20} /> },
     { id: 'rides', label: 'Rides', icon: <Car size={20} /> },
     { id: 'earnings', label: 'Earnings', icon: <DollarSign size={20} /> },
-    { id: 'analytics', label: 'Analytics', icon: <Activity size={20} /> },
     { id: 'profile', label: 'Profile', icon: <User size={20} /> },
   ];
 
@@ -190,10 +184,7 @@ export function DriverDashboard() {
             <Badge variant={profile.AvailabilityStatus === 'Online' ? 'success' : 'secondary'}>
               {profile.AvailabilityStatus || 'Offline'}
             </Badge>
-            <Button variant="glass" size="sm">
-              <Bell size={16} className="mr-2" />
-              Notifications
-            </Button>
+            <NotificationCenter />
           </div>
         </div>
 
@@ -209,8 +200,7 @@ export function DriverDashboard() {
             {activeTab === 'overview' && <OverviewTab earnings={earnings} wallet={wallet} ratings={ratings} loading={loading} />}
             {activeTab === 'rides' && <RidesTab incomingRides={incomingRides} myRides={myRides} onAcceptRide={handleAcceptRide} onRejectRide={handleRejectRide} onStartRide={handleStartRide} onCompleteRide={handleCompleteRide} loading={loading} />}
             {activeTab === 'earnings' && <EarningsTab earnings={earnings} wallet={wallet} loading={loading} />}
-            {activeTab === 'analytics' && <AnalyticsTab loading={loading} />}
-            {activeTab === 'profile' && <ProfileTab />}
+            {activeTab === 'profile' && <ProfileTab profile={profile} loading={loading} />}
           </motion.div>
         </AnimatePresence>
       </main>
@@ -464,24 +454,9 @@ function EarningsTab({ earnings, wallet, loading }: any) {
   );
 }
 
-// Analytics Tab Component
-function AnalyticsTab({ loading }: any) {
-  if (loading) {
-    return <Skeleton className="h-64" />;
-  }
-
-  return (
-    <div className="space-y-6">
-      <GlassCard tier={2} className="p-6">
-        <h3 className="text-xl font-display text-white mb-4">Performance Analytics</h3>
-        <p className="text-text-muted">Analytics dashboard coming soon...</p>
-      </GlassCard>
-    </div>
-  );
-}
 
 // Profile Tab Component
-function ProfileTab({ profile, onUpdate, loading }: any) {
+function ProfileTab({ profile, loading }: any) {
   if (loading) {
     return <Skeleton className="h-64" />;
   }

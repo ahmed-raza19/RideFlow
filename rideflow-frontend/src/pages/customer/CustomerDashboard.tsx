@@ -15,6 +15,7 @@ import { useWebSocket } from '../../lib/websocket';
 import { SafetyPanel } from '../../components/safety/SafetyPanel';
 import { fadeSlideUp } from '../../motion/presets';
 import { NotificationCenter } from '../../components/customer/NotificationCenter';
+import { LocationSearch } from '../../components/ui/LocationSearch';
 
 export function CustomerDashboard() {
   const [activeTab, setActiveTab] = useState('book');
@@ -64,6 +65,10 @@ function BookTab() {
   const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
   const [pickup, setPickup] = useState<number | null>(null);
   const [dropoff, setDropoff] = useState<number | null>(null);
+  const [pickupText, setPickupText] = useState('');
+  const [dropoffText, setDropoffText] = useState('');
+  const [pickupLocation, setPickupLocation] = useState<any>(null);
+  const [dropoffLocation, setDropoffLocation] = useState<any>(null);
   const [activeRideId, setActiveRideId] = useState<number | null>(null);
   const [rideState, setRideState] = useState<any>(null);
   const [estimatedFare, setEstimatedFare] = useState<number>(0);
@@ -282,25 +287,16 @@ function BookTab() {
                         <p className="text-text-muted text-sm">Where should we pick you up?</p>
                       </div>
                     </div>
-                    <div className="relative">
-                      <select 
-                        className="w-full bg-gradient-to-r from-glass-bg-light via-glass-bg to-glass-bg-light border-2 border-amber-500/30 rounded-2xl px-6 py-4 text-white outline-none hover:border-amber-500/50 focus:border-amber-500/70 transition-all duration-300 shadow-glow hover:shadow-glow-lg appearance-none cursor-pointer backdrop-blur-xl"
-                        value={pickup || ''}
-                        onChange={(e) => setPickup(Number(e.target.value))}
-                      >
-                        <option value="" disabled className="bg-gray-900 text-gray-400">
-                          {pickup ? locations.find(l => l.LocationID === pickup)?.LocationName + ' - ' + locations.find(l => l.LocationID === pickup)?.City || 'Select pickup location' : 'Select pickup location'}
-                        </option>
-                        {locations.map(l => (
-                          <option key={l.LocationID} value={l.LocationID} className="bg-gray-900 text-white hover:bg-amber-500/20">
-                            {l.LocationName} - {l.City}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                        <MapPin className="text-amber-500" size={20} />
-                      </div>
-                    </div>
+                    <LocationSearch
+                      value={pickupText}
+                      onChange={(locationId, location) => {
+                        setPickup(locationId);
+                        setPickupLocation(location);
+                      }}
+                      onTextChange={setPickupText}
+                      placeholder="Where should we pick you up?"
+                      iconColor="text-amber-500"
+                    />
                   </div>
 
                   {/* Dropoff Location */}
@@ -314,25 +310,16 @@ function BookTab() {
                         <p className="text-text-muted text-sm">Where are you heading?</p>
                       </div>
                     </div>
-                    <div className="relative">
-                      <select 
-                        className="w-full bg-gradient-to-r from-glass-bg-light via-glass-bg to-glass-bg-light border-2 border-emerald-500/30 rounded-2xl px-6 py-4 text-white outline-none hover:border-emerald-500/50 focus:border-emerald-500/70 transition-all duration-300 shadow-glow hover:shadow-glow-lg appearance-none cursor-pointer backdrop-blur-xl"
-                        value={dropoff || ''}
-                        onChange={(e) => setDropoff(Number(e.target.value))}
-                      >
-                        <option value="" disabled className="bg-gray-900 text-gray-400">
-                          {dropoff ? locations.find(l => l.LocationID === dropoff)?.LocationName + ' - ' + locations.find(l => l.LocationID === dropoff)?.City || 'Select dropoff location' : 'Select dropoff location'}
-                        </option>
-                        {locations.map(l => (
-                          <option key={l.LocationID} value={l.LocationID} className="bg-gray-900 text-white hover:bg-emerald-500/20">
-                            {l.LocationName} - {l.City}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                        <MapPin className="text-emerald-500" size={20} />
-                      </div>
-                    </div>
+                    <LocationSearch
+                      value={dropoffText}
+                      onChange={(locationId, location) => {
+                        setDropoff(locationId);
+                        setDropoffLocation(location);
+                      }}
+                      onTextChange={setDropoffText}
+                      placeholder="Where are you heading?"
+                      iconColor="text-emerald-500"
+                    />
                   </div>
                 </div>
 
@@ -543,7 +530,7 @@ function BookTab() {
                       </div>
                       <div className="text-center">
                         <div className="font-semibold text-white">Pickup</div>
-                        <div className="text-sm text-text-muted">{locations.find(l => l.LocationID === pickup)?.LocationName}</div>
+                        <div className="text-sm text-text-muted">{pickupLocation?.LocationName || 'Select pickup'}</div>
                       </div>
                     </motion.div>
 
@@ -569,7 +556,7 @@ function BookTab() {
                       </div>
                       <div className="text-center">
                         <div className="font-semibold text-white">Dropoff</div>
-                        <div className="text-sm text-text-muted">{locations.find(l => l.LocationID === dropoff)?.LocationName}</div>
+                        <div className="text-sm text-text-muted">{dropoffLocation?.LocationName || 'Select dropoff'}</div>
                       </div>
                     </motion.div>
                   </div>
@@ -601,7 +588,7 @@ function BookTab() {
                         </div>
                         <div className="flex-1">
                           <div className="text-sm text-text-muted">From</div>
-                          <div className="text-white font-medium">{locations.find(l => l.LocationID === pickup)?.LocationName}</div>
+                          <div className="text-white font-medium">{pickupLocation?.LocationName || 'Pickup location'}</div>
                         </div>
                       </div>
                       
@@ -611,7 +598,7 @@ function BookTab() {
                         </div>
                         <div className="flex-1">
                           <div className="text-sm text-text-muted">To</div>
-                          <div className="text-white font-medium">{locations.find(l => l.LocationID === dropoff)?.LocationName}</div>
+                          <div className="text-white font-medium">{dropoffLocation?.LocationName || 'Dropoff location'}</div>
                         </div>
                       </div>
                     </div>
@@ -672,8 +659,8 @@ function BookTab() {
               <p className="text-text-muted mb-4">Your ride has been cancelled. You can book a new ride anytime.</p>
               <div className="bg-glass-bg-light p-4 rounded-radius-md border border-glass-border my-6">
                 <p className="text-sm text-text-muted">Original fare: PKR {rideState.Fare}</p>
-                <p className="text-sm text-text-muted">Pickup: {locations.find(l => l.LocationID === pickup)?.LocationName}</p>
-                <p className="text-sm text-text-muted">Dropoff: {locations.find(l => l.LocationID === dropoff)?.LocationName}</p>
+                <p className="text-sm text-text-muted">Pickup: {pickupLocation?.LocationName || 'Selected pickup'}</p>
+                <p className="text-sm text-text-muted">Dropoff: {dropoffLocation?.LocationName || 'Selected dropoff'}</p>
               </div>
               <Button className="bg-gradient-to-r from-soft-gold to-champagne hover:from-champagne hover:to-soft-gold text-text-primary shadow-glow-lg" onClick={() => { setStep(1); setRideState(null); setActiveRideId(null); }}>Book New Ride</Button>
             </GlassCard>
@@ -768,8 +755,8 @@ function BookTab() {
                   <p className="text-text-muted mb-4">Please wait while we connect you to a nearby driver.</p>
                   <div className="bg-glass-bg-light p-4 rounded-radius-md border border-glass-border my-6">
                     <p className="text-amber-500 font-medium mb-1">Estimated Fare: PKR {rideState.Fare}</p>
-                    <p className="text-sm text-text-muted">Pickup: {locations.find(l => l.LocationID === pickup)?.LocationName}</p>
-                    <p className="text-sm text-text-muted">Dropoff: {locations.find(l => l.LocationID === dropoff)?.LocationName}</p>
+                    <p className="text-sm text-text-muted">Pickup: {pickupLocation?.LocationName || 'Selected pickup'}</p>
+                    <p className="text-sm text-text-muted">Dropoff: {dropoffLocation?.LocationName || 'Selected dropoff'}</p>
                   </div>
                   <div className="flex gap-4 justify-center">
                     <Button variant="glass" onClick={() => riderAPI.getRideDetail(activeRideId!)}>Refresh Status</Button>
@@ -802,7 +789,7 @@ function BookTab() {
                   <div className="bg-glass-bg-light p-4 rounded-radius-md border border-glass-border my-6">
                     <p className="text-amber-500 font-medium mb-1">Fare: PKR {rideState.Fare}</p>
                     <p className="text-sm text-text-muted">You are currently on your way to your destination</p>
-                    <p className="text-sm text-text-muted">Destination: {locations.find(l => l.LocationID === dropoff)?.LocationName}</p>
+                    <p className="text-sm text-text-muted">Destination: {dropoffLocation?.LocationName || 'Selected destination'}</p>
                     {rideState.DriverName && <p className="text-sm text-amber-600 font-medium mt-2">Driver: {rideState.DriverName}</p>}
                   </div>
                   <Button variant="glass" onClick={() => riderAPI.getRideDetail(activeRideId!)}>Refresh Status</Button>

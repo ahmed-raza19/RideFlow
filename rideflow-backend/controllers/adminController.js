@@ -639,7 +639,7 @@ const getRevenueOverview = asyncHandler(async (req, res) => {
     params.push(from, to);
   }
   
-  // Total revenue from all completed rides
+  // Total revenue from all completed rides (including pending payments)
   const [totalRevenue] = await db.query(`
     SELECT 
       SUM(p.Amount) AS TotalRevenue,
@@ -650,7 +650,7 @@ const getRevenueOverview = asyncHandler(async (req, res) => {
       MIN(p.TransactionDate) AS FirstTransaction,
       MAX(p.TransactionDate) AS LastTransaction
     FROM PAYMENTS p 
-    WHERE p.PaymentStatus = 'Paid' ${dateFilter}
+    WHERE p.PaymentStatus IN ('Paid', 'Pending') ${dateFilter}
   `, params);
   
   // Revenue by payment method
@@ -659,9 +659,9 @@ const getRevenueOverview = asyncHandler(async (req, res) => {
       p.PaymentMethod,
       COUNT(p.PaymentID) AS TransactionCount,
       SUM(p.Amount) AS Revenue,
-      ROUND(SUM(p.Amount) * 100.0 / (SELECT SUM(Amount) FROM PAYMENTS WHERE PaymentStatus = 'Paid' ${dateFilter}), 2) AS Percentage
+      ROUND(SUM(p.Amount) * 100.0 / (SELECT SUM(Amount) FROM PAYMENTS WHERE PaymentStatus IN ('Paid', 'Pending') ${dateFilter}), 2) AS Percentage
     FROM PAYMENTS p 
-    WHERE p.PaymentStatus = 'Paid' ${dateFilter}
+    WHERE p.PaymentStatus IN ('Paid', 'Pending') ${dateFilter}
     GROUP BY p.PaymentMethod
     ORDER BY Revenue DESC
   `, params);
@@ -675,7 +675,7 @@ const getRevenueOverview = asyncHandler(async (req, res) => {
       SUM(p.Amount) AS Revenue,
       SUM(p.DiscountApplied) AS Discounts
     FROM PAYMENTS p 
-    WHERE p.PaymentStatus = 'Paid' 
+    WHERE p.PaymentStatus IN ('Paid', 'Pending') 
       AND p.TransactionDate >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
       ${dateFilter}
     GROUP BY DATE_FORMAT(p.TransactionDate, '%Y-%m'), DATE_FORMAT(p.TransactionDate, '%M %Y')
@@ -694,7 +694,7 @@ const getRevenueOverview = asyncHandler(async (req, res) => {
       MAX(p.TransactionDate) AS LastTransaction
     FROM PAYMENTS p 
     JOIN USERS u ON p.CustomerID = u.UserID
-    WHERE p.PaymentStatus = 'Paid' ${dateFilter}
+    WHERE p.PaymentStatus IN ('Paid', 'Pending') ${dateFilter}
     GROUP BY u.UserID, u.FirstName, u.LastName, u.Email
     ORDER BY TotalSpent DESC
     LIMIT 10
@@ -708,7 +708,7 @@ const getRevenueOverview = asyncHandler(async (req, res) => {
       COUNT(p.PaymentID) AS Transactions,
       SUM(p.Amount) AS Revenue
     FROM PAYMENTS p 
-    WHERE p.PaymentStatus = 'Paid' 
+    WHERE p.PaymentStatus IN ('Paid', 'Pending') 
       AND p.TransactionDate >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
       ${dateFilter}
     GROUP BY DATE(p.TransactionDate), DATE_FORMAT(p.TransactionDate, '%d %M')
