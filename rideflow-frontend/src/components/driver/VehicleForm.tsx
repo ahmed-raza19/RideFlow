@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Car, Plus, Edit2, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { X, Car, Edit2, Trash2 } from 'lucide-react';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { FormInput } from '../ui/FormInput';
@@ -171,7 +171,7 @@ interface VehicleCardProps {
   onUpdate: () => void;
 }
 
-export function VehicleCard({ vehicle, onEdit, onDelete, onUpdate }: VehicleCardProps) {
+export function VehicleCard({ vehicle, onEdit, onUpdate }: VehicleCardProps) {
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {

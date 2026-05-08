@@ -2,7 +2,7 @@
 // React hook for WebSocket integration with driver dashboard
 
 import { useEffect, useState, useCallback, useRef } from 'react';
-import socketService from '../lib/socket';
+import { socketService } from '../lib/socket';
 
 interface UseWebSocketOptions {
   onNewRideRequest?: (data: any) => void;
@@ -124,7 +124,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}) {
   }, []);
 
   const sendSOS = useCallback((rideId?: number, location?: { latitude: number; longitude: number }) => {
-    socketService.sendSOS(rideId, location);
+    const sosLocation = location ? { lat: location.latitude, lng: location.longitude } : location;
+    socketService.sendSOS(rideId, sosLocation);
   }, []);
 
   const reconnect = useCallback(() => {

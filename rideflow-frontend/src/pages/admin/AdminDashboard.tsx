@@ -757,7 +757,6 @@ function ReportsTab() {
 
 function VehiclesTab() {
   const [vehicles, setVehicles] = useState<any[]>([]);
-  const [showCreate, setShowCreate] = useState(false);
   const fetchVehicles = () => adminAPI.getVehicles().then(r => setVehicles(r.data.data)).catch(console.error);
   useEffect(() => { fetchVehicles(); }, []);
 
@@ -782,9 +781,6 @@ function VehiclesTab() {
     <GlassCard tier={1} className="p-6 h-[80vh] flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-display">Vehicle Management</h3>
-        <div className="flex gap-2">
-          <Button variant="glass" size="sm" onClick={() => setShowCreate(true)}>Add Vehicle</Button>
-        </div>
       </div>
       <div className="flex-1 overflow-auto rounded-radius-md border border-glass-border">
         <table className="w-full text-left text-sm whitespace-nowrap">
@@ -834,14 +830,6 @@ function RidesTab() {
     adminAPI.getRides(params).then(r => setRides(r.data.data)).catch(console.error);
   };
   useEffect(() => { fetchRides(); }, [statusFilter]);
-
-  const updateStatus = async (id: number, status: string) => {
-    try {
-      await adminAPI.updateRideStatus(id, status);
-      toast.success(`Ride ${status}`);
-      fetchRides();
-    } catch { toast.error('Failed to update'); }
-  };
 
   const cancelRide = async (id: number) => {
     if (!confirm('Cancel this ride?')) return;

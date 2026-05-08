@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, User, Mail, Phone, Shield, Check, CreditCard, FileText } from 'lucide-react';
+import { X, User, Mail, Shield, Check, FileText } from 'lucide-react';
 import { GlassCard } from '../ui/GlassCard';
 import { Button } from '../ui/Button';
 import { adminAPI } from '../../lib/admin';

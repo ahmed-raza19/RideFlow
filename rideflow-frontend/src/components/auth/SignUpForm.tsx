@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { User, Mail, Lock, Phone, Car, CreditCard, IdCard, Eye, EyeOff, Check, X } from 'lucide-react';
+import { User, Mail, Phone, CreditCard, IdCard, Eye, EyeOff } from 'lucide-react';
 import { FormInput } from '../ui/FormInput';
 import { Button } from '../ui/Button';
 import { Toggle } from '../ui/Toggle';

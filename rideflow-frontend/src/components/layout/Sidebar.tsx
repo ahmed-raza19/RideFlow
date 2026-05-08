@@ -1,7 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
-import { Link } from 'react-router-dom';
 import { GlassCard } from '../ui/GlassCard';
 
 export interface NavItem {

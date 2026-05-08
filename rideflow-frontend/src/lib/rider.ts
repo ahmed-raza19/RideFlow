@@ -18,6 +18,7 @@ export const riderAPI = {
   getActivePromos:     () => api.get('/rider/promocodes'),
   getMyPromos:         () => api.get('/rider/my-promocodes'),
   rateRide:           (id: number, data: object) => api.post(`/rider/rides/${id}/rate`, data),
+  rateDriver:         (data: object) => api.post('/rider/driver/rate', data),
   fileComplaint:       (data: object) => api.post('/rider/complaints', data),
   getComplaints:       () => api.get('/rider/complaints'),
   getSavedLocations:   () => api.get('/rider/saved-locations'),

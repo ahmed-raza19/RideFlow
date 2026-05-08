@@ -1,7 +1,13 @@
-import { toast } from '../components/ui/Toast';
-
 // Mock Socket.IO implementation for development
 // Replace with actual Socket.IO when dependency is installed
+
+// Simple toast implementation for socket service
+const toast = {
+  success: (message: string) => console.log('SUCCESS:', message),
+  error: (message: string) => console.error('ERROR:', message),
+  info: (message: string) => console.info('INFO:', message)
+};
+
 interface MockSocket {
   on(event: string, callback: (data: any) => void): void;
   emit(event: string, data: any): void;
@@ -22,7 +28,7 @@ class MockSocketIO {
         }
         this.listeners.get(event)!.push(callback);
       },
-      emit: (event, data) => {
+      emit: (event, _data) => {
         // Simulate some events for development
         setTimeout(() => {
           if (event === 'driver_online') {
@@ -130,8 +136,8 @@ export class SocketService {
   }
 
   // Driver actions
-  goOnline() {
-    this.emit('driver_online', { status: 'Online' });
+  goOnline(locationID?: number, vehicleID?: number) {
+    this.emit('driver_online', { status: 'Online', locationID, vehicleID });
   }
 
   goOffline() {
@@ -142,8 +148,12 @@ export class SocketService {
     this.emit('accept_ride', { rideId, vehicleId });
   }
 
-  rejectRide(rideId: number, reason: string) {
+  rejectRide(rideId: number, reason?: string) {
     this.emit('reject_ride', { rideId, reason });
+  }
+
+  updateLocation(latitude: number, longitude: number, locationID?: number) {
+    this.emit('update_location', { latitude, longitude, locationID });
   }
 
   startRide(rideId: number) {
@@ -154,8 +164,8 @@ export class SocketService {
     this.emit('complete_ride', { rideId });
   }
 
-  sendSOS(location: { lat: number; lng: number }, message?: string) {
-    this.emit('sos', { location, message });
+  sendSOS(rideId?: number, location?: { lat: number; lng: number }) {
+    this.emit('sos', { rideId, location });
   }
 
   submitRating(rideId: number, rating: number, feedback?: string) {
@@ -176,6 +186,11 @@ export class SocketService {
     }
   }
 
+  reconnect() {
+    this.disconnect();
+    this.connect();
+  }
+
   isConnected(): boolean {
     return this.socket?.connected || false;
   }
@@ -192,16 +207,16 @@ export class SocketService {
   }
 
   // Event handlers
-  private handleStatusUpdated(data: any) {
+  private handleStatusUpdated(data: { status?: string }) {
     window.dispatchEvent(new CustomEvent('driver_status_updated', { detail: data }));
     
-    const statusMessages = {
+    const statusMessages: { [key: string]: string } = {
       'Online': 'You are now online and ready to receive rides',
       'Offline': 'You are now offline',
       'In-Ride': 'You are currently in a ride'
     };
     
-    const message = statusMessages[data.status] || `Status updated to: ${data.status}`;
+    const message = statusMessages[data.status || ''] || `Status updated to: ${data.status}`;
     toast.info(message);
   }
 

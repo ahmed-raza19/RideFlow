@@ -35,7 +35,14 @@ export const PromoCodeManager: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    code: string;
+    discountPercentage: number;
+    maxDiscount: number | undefined;
+    validFrom: string;
+    validTo: string;
+    usageLimit: number;
+  }>({
     code: '',
     discountPercentage: 20,
     maxDiscount: 500,

@@ -13,7 +13,6 @@ interface RatingModalProps {
 export const RatingModal: React.FC<RatingModalProps> = ({
   isOpen,
   onClose,
-  rideId,
   driverName,
   onSubmit,
   isLoading = false

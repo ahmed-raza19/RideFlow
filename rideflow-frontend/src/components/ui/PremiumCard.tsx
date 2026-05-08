@@ -1,7 +1,5 @@
 import { motion } from 'framer-motion';
-import { Check, X, Clock, MapPin, Star, Zap, Shield } from 'lucide-react';
-import { GlassCard } from './GlassCard';
-import { Badge } from './Badge';
+import { Check, X, Clock, Zap } from 'lucide-react';
 
 interface PremiumCardProps {
   children: React.ReactNode;

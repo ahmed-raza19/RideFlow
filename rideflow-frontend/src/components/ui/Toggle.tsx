@@ -1,4 +1,3 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { clsx } from 'clsx';
 import { springs } from '../../motion/presets';
@@ -13,6 +12,12 @@ export function Toggle({ checked, onChange, label }: ToggleProps) {
   return (
     <label className="flex items-center gap-3 cursor-pointer group">
       <div className="relative flex items-center">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChange(e.target.checked)}
+          className="sr-only"
+        />
         <div 
           className={clsx(
             'w-12 h-6 rounded-full transition-colors duration-300',

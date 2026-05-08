@@ -1,18 +1,15 @@
-import React from 'react';
 import { motion } from 'framer-motion';
 import { Wifi, WifiOff, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Badge } from '../ui/Badge';
 
 interface ConnectionStatusProps {
-  isConnected: boolean;
   connectionStatus: 'connected' | 'disconnected' | 'connecting';
   onReconnect?: () => void;
   className?: string;
 }
 
 export function ConnectionStatus({ 
-  isConnected, 
   connectionStatus, 
   onReconnect, 
   className = '' 

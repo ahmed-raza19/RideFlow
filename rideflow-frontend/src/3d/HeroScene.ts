@@ -1,15 +1,15 @@
 import * as THREE from 'three';
 
 export class HeroScene {
-  private renderer: THREE.WebGLRenderer;
-  private scene: THREE.Scene;
-  private camera: THREE.PerspectiveCamera;
-  private mesh: THREE.Mesh;
-  private wire: THREE.Mesh;
+  private renderer?: THREE.WebGLRenderer;
+  private scene?: THREE.Scene;
+  private camera?: THREE.PerspectiveCamera;
+  private mesh?: THREE.Mesh;
+  private wire?: THREE.Mesh;
   private mouse = { x: 0, y: 0 };
   private rafId: number = 0;
 
-  constructor(private canvas: HTMLCanvasElement) {
+  constructor(canvas: HTMLCanvasElement) {
     // Performance gate
     const shouldRender = (() => {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
@@ -61,15 +61,21 @@ export class HeroScene {
   private animate() {
     this.rafId = requestAnimationFrame(() => this.animate());
     const t = performance.now() * 0.0003;
-    this.mesh.rotation.x = t * 0.4 + this.mouse.y * 0.15;
-    this.mesh.rotation.y = t * 0.6 + this.mouse.x * 0.15;
-    this.wire.rotation.x = this.mesh.rotation.x;
-    this.wire.rotation.y = this.mesh.rotation.y;
-    this.renderer.render(this.scene, this.camera);
+    if (this.mesh && this.wire) {
+      this.mesh.rotation.x = t * 0.4 + this.mouse.y * 0.15;
+      this.mesh.rotation.y = t * 0.6 + this.mouse.x * 0.15;
+      this.wire.rotation.x = this.mesh.rotation.x;
+      this.wire.rotation.y = this.mesh.rotation.y;
+    }
+    if (this.renderer && this.scene && this.camera) {
+      this.renderer.render(this.scene, this.camera);
+    }
   }
 
   destroy() {
     cancelAnimationFrame(this.rafId);
-    this.renderer.dispose();
+    if (this.renderer) {
+      this.renderer.dispose();
+    }
   }
 }

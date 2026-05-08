@@ -32,7 +32,7 @@ export function SafetyPanel({ activeRide, className = '' }: SafetyPanelProps) {
   const handleSOS = async () => {
     setLoading(true);
     try {
-      const response = await driverAPI.sendSOS();
+      await driverAPI.sendSOS();
       toast.success('SOS alert sent! Emergency services have been notified.');
       setSosModalOpen(false);
     } catch (error: any) {
@@ -71,7 +71,7 @@ export function SafetyPanel({ activeRide, className = '' }: SafetyPanelProps) {
 
     setLoading(true);
     try {
-      const response = await driverAPI.shareTrip(shareData);
+      await driverAPI.shareTrip(shareData);
       toast.success('Trip details shared successfully');
       setShareModalOpen(false);
       setShareData({ rideID: activeRide?.RideID || '', contactPhone: '' });
