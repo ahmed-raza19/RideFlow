@@ -295,7 +295,7 @@ const cancelRide = asyncHandler(async (req, res) => {
 
   // Get ride details before cancelling
   const [[ride]] = await db.query(
-    `SELECT r.RideID, r.RideStatus, r.DriverID, r.CustomerID
+    `SELECT r.RideID, r.RideStatus, r.DriverID, r.CustomerID, r.Fare
      FROM RIDES r
      WHERE r.RideID = ? AND r.CustomerID = ?`,
     [req.params.id, req.user.userID]
@@ -310,38 +310,142 @@ const cancelRide = asyncHandler(async (req, res) => {
     return sendError(res, 'Cannot cancel — ride is already in progress or completed.');
   }
 
-  const [result] = await db.query(
-    `UPDATE RIDES SET RideStatus = 'Cancelled'
-     WHERE RideID = ? AND CustomerID = ? AND RideStatus IN ('Requested', 'Accepted')`,
-    [req.params.id, req.user.userID]
-  );
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
 
-  if (!result.affectedRows) {
-    return sendError(res, 'Cannot cancel — ride not found or already in progress/completed.');
-  }
-
-  // Notify driver if ride was accepted
-  if (ride.DriverID) {
-    const { emitToUser } = require('../config/socket');
-    const db = require('../config/db');
-    const [[driver]] = await db.query(
-      'SELECT UserID FROM DRIVERS WHERE DriverID = ?',
-      [ride.DriverID]
+    // Cancel the ride
+    const [result] = await conn.query(
+      `UPDATE RIDES SET RideStatus = 'Cancelled'
+       WHERE RideID = ? AND CustomerID = ? AND RideStatus IN ('Requested', 'Accepted')`,
+      [req.params.id, req.user.userID]
     );
-    if (driver) {
-      emitToUser(driver.UserID, 'ride_cancelled_by_rider', {
-        rideId: ride.RideID,
-        reason: reason || 'Rider cancelled',
-        timestamp: new Date()
-      });
-    }
-  }
 
-  return sendSuccess(res, {
-    rideID: req.params.id,
-    rideStatus: 'Cancelled',
-    refundAmount: 0
-  }, 'Ride cancelled');
+    if (!result.affectedRows) {
+      await conn.rollback();
+      return sendError(res, 'Cannot cancel — ride not found or already in progress/completed.');
+    }
+
+    // Check for existing payment and process refund if applicable
+    const [[existingPayment]] = await conn.query(
+      `SELECT PaymentID, Amount, PaymentMethod, PaymentStatus 
+       FROM PAYMENTS WHERE RideID = ?`,
+      [req.params.id]
+    );
+
+    let refundAmount = 0;
+    let cancellationFee = 0;
+    let refundMethod = 'original';
+
+    if (existingPayment) {
+      if (existingPayment.PaymentStatus === 'Paid') {
+        // Calculate refund amount based on payment method and timing
+        if (ride.RideStatus === 'Requested') {
+          // Full refund for pre-acceptance cancellation
+          refundAmount = existingPayment.Amount;
+          cancellationFee = 0;
+        } else if (ride.RideStatus === 'Accepted') {
+          // Partial refund after driver acceptance (cancellation fee applies)
+          cancellationFee = Math.min(existingPayment.Amount * 0.10, 50); // 10% or PKR 50 max
+          refundAmount = existingPayment.Amount - cancellationFee;
+        }
+
+        // Handle different refund methods
+        if (existingPayment.PaymentMethod === 'Wallet') {
+          // Credit back to rider wallet (if riders had wallets)
+          // For now, just mark as refunded since riders don't have wallet balance
+          refundMethod = 'wallet_credit';
+        } else if (existingPayment.PaymentMethod === 'CreditCard') {
+          // Process refund to original payment method
+          refundMethod = 'card_refund';
+        } else {
+          // Cash payments - no refund needed
+          refundMethod = 'cash_no_refund';
+          refundAmount = 0;
+          cancellationFee = existingPayment.Amount;
+        }
+
+        // Update payment status to refunded with refund details
+        await conn.query(
+          `UPDATE PAYMENTS 
+           SET PaymentStatus = 'Refunded',
+               Amount = CASE 
+                 WHEN PaymentMethod = 'Cash' THEN 0
+                 ELSE ? 
+               END,
+               DiscountApplied = CASE 
+                 WHEN PaymentMethod = 'Cash' THEN ?
+                 ELSE 0
+               END
+           WHERE PaymentID = ?`,
+          [existingPayment.Amount - refundAmount, existingPayment.PaymentID]
+        );
+
+        // Create refund record for audit trail
+        await conn.query(
+          `INSERT INTO NOTIFICATIONS (UserID, Title, Message, NotificationType, RelatedID)
+           VALUES (?, 'Refund Processed', ?, 'Payment', ?)`,
+          [req.user.userID, 
+           `Refund of PKR ${refundAmount.toFixed(2)} processed for cancelled ride #${req.params.id}. Refund method: ${refundMethod}`, 
+           req.params.id]
+        );
+
+      } else if (existingPayment.PaymentStatus === 'Pending') {
+        // Cancel pending payment
+        await conn.query(
+          `UPDATE PAYMENTS 
+           SET PaymentStatus = 'Failed' 
+           WHERE PaymentID = ?`,
+          [existingPayment.PaymentID]
+        );
+        refundMethod = 'cancelled_pending';
+      }
+    }
+
+    // If driver was assigned, create notification
+    if (ride.DriverID) {
+      const [[driver]] = await conn.query(
+        'SELECT UserID FROM DRIVERS WHERE DriverID = ?',
+        [ride.DriverID]
+      );
+      if (driver) {
+        await conn.query(
+          `INSERT INTO NOTIFICATIONS (UserID, Title, Message, NotificationType, RelatedID)
+           VALUES (?, 'Ride Cancelled', ?, 'RideUpdate', ?)`,
+          [driver.UserID, `Ride #${ride.RideID} has been cancelled by the rider.`, ride.RideID]
+        );
+        
+        // Emit real-time notification
+        const { emitToUser } = require('../config/socket');
+        emitToUser(driver.UserID, 'ride_cancelled_by_rider', {
+          rideId: ride.RideID,
+          reason: reason || 'Rider cancelled',
+          timestamp: new Date()
+        });
+      }
+    }
+
+    await conn.commit();
+
+    return sendSuccess(res, {
+      rideID: req.params.id,
+      rideStatus: 'Cancelled',
+      refundAmount: refundAmount,
+      cancellationFee: cancellationFee,
+      refundMethod: refundMethod,
+      originalPaymentMethod: existingPayment?.PaymentMethod,
+      message: refundAmount > 0 
+        ? `Ride cancelled. Refund of PKR ${refundAmount.toFixed(2)} will be processed via ${refundMethod.replace('_', ' ')}.` 
+        : cancellationFee > 0 
+          ? `Ride cancelled. Cancellation fee of PKR ${cancellationFee.toFixed(2)} applies.`
+          : 'Ride cancelled successfully.'
+    }, 'Ride cancelled');
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 });
 
 // ─── Payments ─────────────────────────────────────────────────
