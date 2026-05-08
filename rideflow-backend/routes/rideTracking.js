@@ -1,26 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const rideTrackingController = require('../controllers/rideTrackingController');
+const { startRideTracking, getRideTracking, updateLocation, stopRideTracking } = require('../controllers/rideTrackingController');
 const auth = require('../middleware/auth');
 
 // POST /api/rides/:rideId/start-tracking
-router.post('/:rideId/start-tracking', auth, async (req, res) => {
-  await rideTrackingController.startRideTracking(req, res);
-});
+router.post('/:rideId/start-tracking', auth, startRideTracking);
 
 // GET /api/rides/:rideId/tracking
-router.get('/:rideId/tracking', auth, async (req, res) => {
-  await rideTrackingController.getRideTracking(req, res);
-});
+router.get('/:rideId/tracking', auth, getRideTracking);
 
 // POST /api/drivers/location
-router.post('/location', auth, async (req, res) => {
-  await rideTrackingController.updateLocation(req, res);
-});
+router.post('/location', auth, updateLocation);
 
 // POST /api/rides/:rideId/stop-tracking
-router.post('/:rideId/stop-tracking', auth, async (req, res) => {
-  await rideTrackingController.stopRideTracking(req, res);
-});
+router.post('/:rideId/stop-tracking', auth, stopRideTracking);
 
 module.exports = router;
