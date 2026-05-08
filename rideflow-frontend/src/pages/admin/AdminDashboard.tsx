@@ -15,6 +15,7 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { MagneticButton } from '../../components/ui/MagneticButton';
 import { CreateUserModal } from '../../components/admin/CreateUserModal';
 import { NotificationCenter } from '../../components/admin/NotificationCenter';
+import { RevenueTab } from './RevenueTab';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -23,6 +24,7 @@ export function AdminDashboard() {
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={20} /> },
+    { id: 'revenue', label: 'Revenue', icon: <DollarSign size={20} /> },
     { id: 'users', label: 'Users', icon: <Users size={20} /> },
     { id: 'drivers', label: 'Drivers', icon: <Car size={20} /> },
     { id: 'vehicles', label: 'Vehicles', icon: <Car size={20} /> },
@@ -72,6 +74,7 @@ export function AdminDashboard() {
               className="h-full"
             >
               {activeTab === 'overview' && <OverviewTab />}
+              {activeTab === 'revenue' && <RevenueTab />}
               {activeTab === 'users' && <UsersTab />}
               {activeTab === 'drivers' && <DriversTab />}
               {activeTab === 'vehicles' && <VehiclesTab />}
