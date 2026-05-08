@@ -1,6 +1,6 @@
 // routes/admin.js
 const router = require('express').Router();
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin } = require('../middleware/auth_test');
 const C = require('../controllers/adminController');
 
 // All admin routes require JWT + Admin role

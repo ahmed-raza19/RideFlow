@@ -7,15 +7,27 @@ import { GlassCard } from '../ui/GlassCard';
 import { adminAPI } from '../../lib/admin';
 import { fadeSlideUp } from '../../motion/presets';
 
+interface AdminNotificationData {
+  lowRatedDrivers: Array<{
+    DriverID: number;
+    DriverName: string;
+    TotalRatings: number;
+    AvgRating: number;
+  }>;
+  unverifiedDrivers: number;
+  pendingVehicles: number;
+  openComplaints: number;
+}
+
 interface Notification {
-  NotificationID: number;
-  Title: string;
-  Message: string;
-  NotificationType: 'RideUpdate' | 'Payment' | 'Promo' | 'Safety' | 'System' | 'Ride' | 'Verification';
-  IsRead: boolean;
-  CreatedAt: string;
-  RelatedID?: number;
-  ActionURL?: string;
+  id: string;
+  title: string;
+  message: string;
+  type: 'RideUpdate' | 'Payment' | 'Promo' | 'Safety' | 'System' | 'Ride' | 'Verification';
+  isRead: boolean;
+  createdAt: string;
+  relatedId?: number;
+  actionUrl?: string;
 }
 
 interface NotificationCenterProps {
@@ -28,13 +40,69 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const processNotifications = (data: AdminNotificationData): Notification[] => {
+    const notifications: Notification[] = [];
+    
+    // Add low-rated drivers notifications
+    data.lowRatedDrivers.forEach((driver) => {
+      notifications.push({
+        id: `low-rated-${driver.DriverID}`,
+        title: 'Low Rated Driver',
+        message: `${driver.DriverName} has an average rating of ${driver.AvgRating} from ${driver.TotalRatings} ratings`,
+        type: 'Safety',
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        relatedId: driver.DriverID
+      });
+    });
+    
+    // Add unverified drivers notification
+    if (data.unverifiedDrivers > 0) {
+      notifications.push({
+        id: 'unverified-drivers',
+        title: 'Unverified Drivers',
+        message: `${data.unverifiedDrivers} drivers pending verification`,
+        type: 'Verification',
+        isRead: false,
+        createdAt: new Date().toISOString()
+      });
+    }
+    
+    // Add pending vehicles notification
+    if (data.pendingVehicles > 0) {
+      notifications.push({
+        id: 'pending-vehicles',
+        title: 'Pending Vehicle Verification',
+        message: `${data.pendingVehicles} vehicles pending verification`,
+        type: 'Verification',
+        isRead: false,
+        createdAt: new Date().toISOString()
+      });
+    }
+    
+    // Add open complaints notification
+    if (data.openComplaints > 0) {
+      notifications.push({
+        id: 'open-complaints',
+        title: 'Open Complaints',
+        message: `${data.openComplaints} complaints require attention`,
+        type: 'Safety',
+        isRead: false,
+        createdAt: new Date().toISOString()
+      });
+    }
+    
+    return notifications;
+  };
+
   const fetchNotifications = async () => {
     setLoading(true);
     try {
       const response = await adminAPI.getNotifications();
-      const data = response.data?.data || [];
-      setNotifications(data);
-      setUnreadCount(data.filter((n: Notification) => !n.IsRead).length);
+      const data = response.data || {};
+      const processedNotifications = processNotifications(data);
+      setNotifications(processedNotifications);
+      setUnreadCount(processedNotifications.filter(n => !n.isRead).length);
     } catch (error: any) {
       console.error('Failed to load notifications:', error);
     } finally {
@@ -49,16 +117,16 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
     return () => clearInterval(interval);
   }, []);
 
-  const markAsRead = async (notificationId: number) => {
+  const markAsRead = async (notificationId: string) => {
     // Admin API doesn't have mark read endpoint, just update local state
     setNotifications(prev => 
-      prev.map(n => n.NotificationID === notificationId ? { ...n, IsRead: true } : n)
+      prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
     );
     setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
   const markAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, IsRead: true })));
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     setUnreadCount(0);
   };
 
@@ -159,40 +227,40 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
                   <div className="divide-y divide-champagne/20">
                     {notifications.map((notification) => (
                       <motion.div
-                        key={notification.NotificationID}
+                        key={notification.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         className={`p-4 hover:bg-amber-50 cursor-pointer transition-colors ${
-                          !notification.IsRead ? 'bg-amber-100/50' : ''
+                          !notification.isRead ? 'bg-amber-100/50' : ''
                         }`}
-                        onClick={() => !notification.IsRead && markAsRead(notification.NotificationID)}
+                        onClick={() => !notification.isRead && markAsRead(notification.id)}
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-shrink-0 mt-1">
-                            {getNotificationIcon(notification.NotificationType)}
+                            {getNotificationIcon(notification.type)}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <h4 className={`text-sm font-medium ${
-                                !notification.IsRead ? 'text-amber-900' : 'text-amber-700'
+                                !notification.isRead ? 'text-amber-900' : 'text-amber-700'
                               }`}>
-                                {notification.Title}
+                                {notification.title}
                               </h4>
-                              {!notification.IsRead && (
+                              {!notification.isRead && (
                                 <div className="w-2 h-2 bg-amber-500 rounded-full flex-shrink-0 mt-2" />
                               )}
                             </div>
                             <p className="text-sm text-amber-800/70 mt-1 line-clamp-2">
-                              {notification.Message}
+                              {notification.message}
                             </p>
                             <div className="flex items-center justify-between mt-2">
                               <span className="text-xs text-amber-700/60">
-                                {formatTime(notification.CreatedAt)}
+                                {formatTime(notification.createdAt)}
                               </span>
-                              {!notification.IsRead && (
+                              {!notification.isRead && (
                                 <Button variant="glass" size="sm" onClick={(e) => {
                                   e.stopPropagation();
-                                  markAsRead(notification.NotificationID);
+                                  markAsRead(notification.id);
                                 }}>
                                   Mark read
                                 </Button>
@@ -216,7 +284,7 @@ export function NotificationCenter({ className = '' }: NotificationCenterProps) 
 // Notification card for displaying in other parts of the app
 interface NotificationCardProps {
   notification: Notification;
-  onRead?: (id: number) => void;
+  onRead?: (id: string) => void;
 }
 
 export function NotificationCard({ notification, onRead }: NotificationCardProps) {
@@ -255,31 +323,31 @@ export function NotificationCard({ notification, onRead }: NotificationCardProps
     <GlassCard tier={1} className="p-4">
       <div className="flex items-start gap-3">
         <div className="flex-shrink-0">
-          {getNotificationIcon(notification.NotificationType)}
+          {getNotificationIcon(notification.type)}
         </div>
         <div className="flex-1">
           <div className="flex items-start justify-between gap-2">
             <h4 className={`font-medium ${
-              !notification.IsRead ? 'text-amber-900' : 'text-amber-700'
+              !notification.isRead ? 'text-amber-900' : 'text-amber-700'
             }`}>
-              {notification.Title}
+              {notification.title}
             </h4>
-            {!notification.IsRead && (
+            {!notification.isRead && (
               <div className="w-3 h-3 bg-amber-500 rounded-full" />
             )}
           </div>
           <p className="text-sm text-amber-800/70 mt-1">
-            {notification.Message}
+            {notification.message}
           </p>
           <div className="flex items-center justify-between mt-3">
             <span className="text-xs text-amber-700/60">
-              {formatTime(notification.CreatedAt)}
+              {formatTime(notification.createdAt)}
             </span>
-            {!notification.IsRead && onRead && (
+            {!notification.isRead && onRead && (
               <Button 
                 variant="glass" 
                 size="sm" 
-                onClick={() => onRead(notification.NotificationID)}
+                onClick={() => onRead(notification.id)}
               >
                 Mark as read
               </Button>

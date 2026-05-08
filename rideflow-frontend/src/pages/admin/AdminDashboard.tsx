@@ -1,6 +1,18 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LayoutDashboard, Users, Car, Tag, MessageSquare, BarChart2, Activity, DollarSign, Star, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  Users, 
+  Car, 
+  Star, 
+  Tag, 
+  MessageSquare, 
+  DollarSign, 
+  Activity, 
+  Clock, 
+  AlertCircle, 
+  CheckCircle
+} from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { DashboardLayout } from '../../components/layout/DashboardLayout';
@@ -15,7 +27,6 @@ import { Skeleton } from '../../components/ui/Skeleton';
 import { MagneticButton } from '../../components/ui/MagneticButton';
 import { CreateUserModal } from '../../components/admin/CreateUserModal';
 import { NotificationCenter } from '../../components/admin/NotificationCenter';
-import { RevenueTab } from './RevenueTab';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -24,7 +35,6 @@ export function AdminDashboard() {
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: <LayoutDashboard size={20} /> },
-    { id: 'revenue', label: 'Revenue', icon: <DollarSign size={20} /> },
     { id: 'users', label: 'Users', icon: <Users size={20} /> },
     { id: 'drivers', label: 'Drivers', icon: <Car size={20} /> },
     { id: 'vehicles', label: 'Vehicles', icon: <Car size={20} /> },
@@ -32,7 +42,6 @@ export function AdminDashboard() {
     { id: 'ratings', label: 'Ratings', icon: <Star size={20} /> },
     { id: 'promos', label: 'Promo Codes', icon: <Tag size={20} /> },
     { id: 'complaints', label: 'Complaints', icon: <MessageSquare size={20} /> },
-    { id: 'reports', label: 'Reports', icon: <BarChart2 size={20} /> },
   ];
 
   return (
@@ -74,7 +83,6 @@ export function AdminDashboard() {
               className="h-full"
             >
               {activeTab === 'overview' && <OverviewTab />}
-              {activeTab === 'revenue' && <RevenueTab />}
               {activeTab === 'users' && <UsersTab />}
               {activeTab === 'drivers' && <DriversTab />}
               {activeTab === 'vehicles' && <VehiclesTab />}
@@ -82,7 +90,6 @@ export function AdminDashboard() {
               {activeTab === 'ratings' && <RatingsTab />}
               {activeTab === 'promos' && <PromosTab />}
               {activeTab === 'complaints' && <ComplaintsTab />}
-              {activeTab === 'reports' && <ReportsTab />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -107,7 +114,7 @@ function OverviewTab() {
           adminAPI.getComplaints('Open')
         ]);
         
-        const revenueData = revenueOverviewRes.data;
+        const revenueData = revenueOverviewRes.data.data;
         const totalRevenue = revenueData.overview.TotalRevenue;
         
         const drivers = userRes.data.data;
@@ -745,121 +752,6 @@ function PromosTab() {
         </table>
       </div>
     </GlassCard>
-  );
-}
-
-function ReportsTab() {
-  const [topD, setTopD] = useState<any[]>([]);
-  const [leader, setLeader] = useState<any[]>([]);
-
-  useEffect(() => {
-    adminAPI.topDrivers().then(r => setTopD(r.data.data)).catch(console.error);
-    adminAPI.leaderboard().then(r => setLeader(r.data.data)).catch(console.error);
-  }, []);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="flex flex-col gap-8"
-    >
-      {/* Top Drivers Section */}
-      <GlassCard tier={1} className="p-8 backdrop-blur-xl bg-glass-white-strong border-glass-border hover:border-soft-gold/30 transition-all duration-300">
-        <div className="mb-8">
-          <h3 className="text-3xl font-display text-text-primary font-bold mb-2">Top Performers</h3>
-          <p className="text-text-secondary">Highest earning drivers this month</p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {topD.map((d, index) => (
-            <motion.div
-              key={d.DriverID}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={{ y: -8, scale: 1.02 }}
-            >
-              <GlassCard tier={2} className="p-6 backdrop-blur-xl bg-glass-white border border-glass-border hover:border-soft-gold/50 transition-all duration-300 text-center group">
-                <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                  {index === 0 ? '🏆' : index === 1 ? '🥈' : index === 2 ? '🥉' : '⭐'}
-                </div>
-                <h4 className="font-bold text-text-primary text-lg mb-2">{d.DriverName}</h4>
-                <div className="space-y-2">
-                  <div className="text-amber-600 font-bold text-xl">PKR {Number(d.TotalEarnings || 0).toLocaleString()}</div>
-                  <div className="text-text-secondary text-sm">{d.TotalRides} Completed Rides</div>
-                  <div className="flex justify-center">
-                    <Badge variant="success" className="px-3 py-1">
-                      {Number(d.AvgRating || 0).toFixed(1)} ★
-                    </Badge>
-                  </div>
-                </div>
-              </GlassCard>
-            </motion.div>
-          ))}
-        </div>
-      </GlassCard>
-
-      {/* Leaderboard Section */}
-      <GlassCard tier={1} className="p-8 backdrop-blur-xl bg-glass-white-strong border-glass-border hover:border-soft-gold/30 transition-all duration-300">
-        <div className="mb-8">
-          <h3 className="text-3xl font-display text-text-primary font-bold mb-2">City Leaderboard</h3>
-          <p className="text-text-secondary">Top-rated drivers by city</p>
-        </div>
-        <div className="overflow-auto rounded-2xl border border-glass-border backdrop-blur-xl bg-glass-white/30">
-          <table className="w-full text-left">
-            <thead className="backdrop-blur-xl bg-glass-white-strong border-b border-glass-border sticky top-0 z-10">
-              <tr>
-                <th className="p-6 font-semibold text-text-primary text-left">City</th>
-                <th className="p-6 font-semibold text-text-primary text-left">Driver</th>
-                <th className="p-6 font-semibold text-text-primary text-left">Rating</th>
-                <th className="p-6 font-semibold text-text-primary text-left">Total Rides</th>
-                <th className="p-6 font-semibold text-text-primary text-left">Performance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {leader.map((l, index) => (
-                <motion.tr
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="border-b border-glass-border/50 hover:bg-glass-white/30 transition-all duration-300"
-                >
-                  <td className="p-6">
-                    <div className="font-semibold text-text-primary">{l.City}</div>
-                  </td>
-                  <td className="p-6">
-                    <div className="font-semibold text-text-primary">{l.DriverName}</div>
-                  </td>
-                  <td className="p-6">
-                    <div className="flex items-center gap-2">
-                      <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                      <span className="font-bold text-amber-600">{Number(l.AvgRating).toFixed(1)}</span>
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    <div className="text-text-secondary">{l.TotalRides}</div>
-                  </td>
-                  <td className="p-6">
-                    <div className="flex items-center gap-2">
-                      <div className="w-full max-w-[100px] h-2 bg-glass-border rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-amber-500 to-soft-gold"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${(Number(l.AvgRating) / 5) * 100}%` }}
-                          transition={{ duration: 1, delay: index * 0.1 }}
-                        />
-                      </div>
-                      <span className="text-xs text-text-secondary">{Math.round((Number(l.AvgRating) / 5) * 100)}%</span>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </GlassCard>
-    </motion.div>
   );
 }
 
