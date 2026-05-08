@@ -15,7 +15,7 @@ api.interceptors.request.use(config => {
     // Auto-inject token based on URL path for testing
     if (config.url?.includes('/rider/')) {
       // Rider token
-      const riderToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOjIxLCJlbWFpbCI6InRlc3QucmlkZXJAcmlkZWZsb3cuY29tIiwicm9sZSI6IlJpZGVyIiwiaWF0IjoxNzc4MjU2NTcxLCJleHAiOjE3NzgzNDI5NzF9.oabQUsW274My7d5SvZmNcbPcWUs1udAdEfdk_P__oY0";
+      const riderToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySUQiOjIxLCJlbWFpbCI6InRlc3QucmlkZXJAcmlkZWZsb3cuY29tIiwicm9sZSI6IlJpZGVyIiwiaWF0IjoxNzc4MjYyNDU5LCJleHAiOjE3NzgzNDg4NTl9.WhNb1ROsz-v8kNavR-t_J9wwwC1Jx-6Dz52qKA7VEcA";
       config.headers.Authorization = `Bearer ${riderToken}`;
     } else {
       // Driver token

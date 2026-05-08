@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -67,7 +67,7 @@ export function DriverDashboard() {
     },
     onRideCompleted: (data) => {
       // Show rating modal when driver completes ride
-      const completedRide = myRides.find(ride => ride.RideID === data.rideId && ride.RideStatus === 'Completed');
+      const completedRide = myRides.find(ride => ride.RideID === data.rideId);
       if (completedRide && !ratingModalOpen) {
         setRatingModalOpen(true);
       }
@@ -160,15 +160,20 @@ export function DriverDashboard() {
     }
   };
 
-  const handleCompleteRide = async (rideId: number) => {
+  const handleCompleteRide = useCallback(async (rideId: number) => {
     try {
       await driverAPI.completeRide(rideId);
-      toast.success('Ride completed!');
+      toast.success('Ride completed successfully!');
+      
+      // Show rating modal after completion
+      setRatingModalOpen(true);
+      
       fetchDashboardData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to complete ride');
+      console.error('Failed to complete ride:', error);
+      toast.error('Failed to complete ride');
     }
-  };
+  }, []);
 
   return (
     <DashboardLayout>

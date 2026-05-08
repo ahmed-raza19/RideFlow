@@ -68,47 +68,6 @@ function BookTab() {
   const [rideState, setRideState] = useState<any>(null);
   const [estimatedFare, setEstimatedFare] = useState<number>(0);
 
-  // Mock data for testing
-  const mockLocations = [
-    { LocationID: 1, LocationName: 'Downtown Plaza', City: 'Karachi', Street: 'Main Boulevard' },
-    { LocationID: 2, LocationName: 'Airport Terminal', City: 'Karachi', Street: 'Jinnah Avenue' },
-    { LocationID: 3, LocationName: 'Beach Resort', City: 'Karachi', Street: 'Sea View Road' },
-    { LocationID: 4, LocationName: 'Shopping Mall', City: 'Karachi', Street: 'Gulshan-e-Iqbal' }
-  ];
-
-  const mockVehicles = [
-    {
-      Type: 'Economy',
-      Available: 5,
-      EstimatedFare: 'PKR 200-300',
-      EstimatedTime: '5-10 mins',
-      Vehicles: [
-        { DriverID: 1, DriverName: 'Ahmed Khan', Rating: 4.8 },
-        { DriverID: 2, DriverName: 'Sara Ali', Rating: 4.9 }
-      ]
-    },
-    {
-      Type: 'Business',
-      Available: 2,
-      EstimatedFare: 'PKR 400-600',
-      EstimatedTime: '3-7 mins',
-      Vehicles: [
-        { DriverID: 3, DriverName: 'Michael Chen', Rating: 4.9 },
-        { DriverID: 4, DriverName: 'Emma Wilson', Rating: 5.0 }
-      ]
-    },
-    {
-      Type: 'Bike',
-      Available: 8,
-      EstimatedFare: 'PKR 100-150',
-      EstimatedTime: '2-5 mins',
-      Vehicles: [
-        { DriverID: 5, DriverName: 'Raju Kumar', Rating: 4.7 },
-        { DriverID: 6, DriverName: 'Fatima Begum', Rating: 4.8 }
-      ]
-    }
-  ];
-  
   // WebSocket integration for real-time updates
   const { subscribeToRide } = useWebSocket();
 
@@ -137,18 +96,26 @@ function BookTab() {
   };
 
   useEffect(() => {
-    // Simplified data loading - just set mock data immediately
-    console.log('Setting mock data immediately...');
-    setLocations(mockLocations);
-    setVehicles(mockVehicles);
-    
-    // Set default pickup and dropoff
-    if (mockLocations.length >= 2) {
-      setPickup(mockLocations[0].LocationID);
-      setDropoff(mockLocations[1].LocationID);
-    }
-    
-    console.log('Mock data set:', { locations: mockLocations.length, vehicles: mockVehicles.length });
+    // Load locations and vehicles from API
+    console.log('Loading locations and vehicles from API...');
+    Promise.all([
+      riderAPI.getLocations(),
+      riderAPI.getVehicles()
+    ]).then(([locationsRes, vehiclesRes]) => {
+      console.log('Locations loaded:', locationsRes.data);
+      console.log('Vehicles loaded:', vehiclesRes.data);
+      
+      setLocations(locationsRes.data.data);
+      setVehicles(vehiclesRes.data.data);
+      
+      // Set default pickup and dropoff
+      if (locationsRes.data.data.length >= 2) {
+        setPickup(locationsRes.data.data[0].LocationID);
+        setDropoff(locationsRes.data.data[1].LocationID);
+      }
+    }).catch((error) => {
+      console.error('Error loading locations and vehicles:', error);
+    });
     
     // Check if rider already has an active ride
     riderAPI.getRideHistory().then(res => {
