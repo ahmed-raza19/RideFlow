@@ -5,7 +5,7 @@ USE rideflow;
 
 -- ─── RIDES table ─────────────────────────────────────────────
 -- Speed up queries that filter by rider, driver, or ride status
-CREATE INDEX  idx_rides_riderid     ON RIDES (RiderID);
+CREATE INDEX  idx_rides_riderid     ON RIDES (CustomerID);
 CREATE INDEX  idx_rides_driverid    ON RIDES (DriverID);
 CREATE INDEX  idx_rides_status      ON RIDES (RideStatus);
 CREATE INDEX  idx_rides_starttime   ON RIDES (StartTime);
