@@ -224,7 +224,7 @@ ORDER  BY r.RideID DESC;
 SELECT 'REPORT 15 — Payment Discount Usage per Ride (Payments JOIN PromoCodes)' AS '';
 SELECT
     p.PaymentID,
-    p.RideID,
+    p.CustomerID,
     p.Amount                               AS AmountPaid_PKR,
     p.DiscountApplied                      AS Discount_PKR,
     pc.Code                                AS PromoCode,

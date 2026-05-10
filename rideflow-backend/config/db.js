@@ -1,22 +1,21 @@
-// config/db.js
-// MySQL2 connection pool — shared across all controllers
 const mysql = require('mysql2/promise');
-require('dotenv').config({ path: __dirname + '/../.env' });
-
+const fs = require('fs');
+require('dotenv').config();
 
 const pool = mysql.createPool({
-  host:               'localhost',
-  port:               3306,
-  database:           'RideFlow',
-  user:               'root',
-  password:           'DIPLOM@t98',
+
+  host: process.env.MYSQL_HOST,
+  port: parseInt(process.env.MYSQL_PORT || '3306'),
+  database: process.env.MYSQL_DATABASE,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
   waitForConnections: true,
-  connectionLimit:    10,
-  queueLimit:         0,
-  timezone:           '+00:00',
+  connectionLimit: 10,
+  queueLimit: 0,
+  timezone: '+00:00',
+  ssl: { ca: require('fs').readFileSync('C:\\Users\\HP\\Downloads\\ca.pem') }
 });
 
-// Test connection on startup
 (async () => {
   try {
     const conn = await pool.getConnection();

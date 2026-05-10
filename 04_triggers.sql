@@ -196,7 +196,8 @@ CREATE EVENT evt_ExpirePromoCodes
 --   Creates notification for admin review when driver
 --   average rating drops below 3.5
 -- ─────────────────────────────────────────────────────────────
-DROP TRIGGER IF EXISTS trg_NotifyAdminLowRatedDriver$$
+DELIMITER $$                          
+DROP TRIGGER IF EXISTS trg_NotifyAdminLowRatedDriver;
 CREATE TRIGGER trg_NotifyAdminLowRatedDriver
 AFTER INSERT ON RATINGS
 FOR EACH ROW

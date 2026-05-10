@@ -78,7 +78,7 @@ INSERT INTO PROMOCODES (Code, DiscountPercentage, MaxDiscount, ValidFrom, ValidT
 ('NEWUSER25',  25.00, 150.00, '2026-05-01 00:00:00', '2026-07-31 23:59:59', 300,   5, 'Active');
 
 -- ─── 7. RIDES ────────────────────────────────────────────────
-INSERT INTO RIDES (RiderID, DriverID, VehicleID, PickupLocationID, DropoffLocationID, RideStatus, Fare, Distance, ScheduledTime, StartTime, EndTime, SurgeMultiplier) VALUES
+INSERT INTO RIDES (CustomerID, DriverID, VehicleID, PickupLocationID, DropoffLocationID, RideStatus, Fare, Distance, ScheduledTime, StartTime, EndTime, SurgeMultiplier) VALUES
 (2, 1, 1, 1,  2,  'Completed',  320.00, 12.50, NULL,                  '2026-04-10 09:00:00', '2026-04-10 09:35:00', 1.00),
 (3, 2, 2, 7,  8,  'Completed',  180.00,  7.20, NULL,                  '2026-04-11 14:00:00', '2026-04-11 14:22:00', 1.00),
 (4, 3, 3, 3,  4,  'Completed',  250.00,  9.80, NULL,                  '2026-04-12 08:30:00', '2026-04-12 09:05:00', 1.50),
@@ -91,7 +91,7 @@ INSERT INTO RIDES (RiderID, DriverID, VehicleID, PickupLocationID, DropoffLocati
 (6, 4, 4, 10, 5,  'Completed',  130.00,  6.80, NULL,                  '2026-04-20 10:00:00', '2026-04-20 10:25:00', 1.00);
 
 -- ─── 8. PAYMENTS ─────────────────────────────────────────────
-INSERT INTO PAYMENTS (RideID, PromoCodeID, RiderID, Amount, PaymentMethod, PaymentStatus, DiscountApplied) VALUES
+INSERT INTO PAYMENTS (RideID, PromoCodeID, CustomerID, Amount, PaymentMethod, PaymentStatus, DiscountApplied) VALUES
 (1,  1, 2, 288.00, 'Cash',       'Paid',    32.00),
 (2,  NULL, 3, 180.00, 'Wallet',  'Paid',     0.00),
 (3,  2, 4, 200.00, 'CreditCard', 'Paid',    50.00),
